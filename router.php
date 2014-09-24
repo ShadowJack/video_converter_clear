@@ -15,22 +15,19 @@
         * GET: /videos/:id/meta - получить информацию о файле
         * DELETE: /videos/:id/- удалить flv и mp4 видеозаписи, соответствующие id
         **/
+        $videosController = new VideosController();
+
         $method = $_SERVER['REQUEST_METHOD'];
         $args = explode('/', rtrim($_REQUEST['init_req'], '/')); // details are in .htaccess file
-        $videosController = new VideosController();
-        $request = rtrim($_REQUEST['init_req'], '/');
-        $actions = array('a' => 'index');
         
         if ( count($args) == 1 && $args[0] == '' )     // matches /videos
         {
             switch ( $method )
             {
                 case 'GET':
-                    //print_r( "You will go to VideosController#index" );
                     $videosController->index();
                     break;
                 case 'POST':
-                    //print_r( "You will go to VideosController#create" );
                     $videosController->create();
                     break;
                 default:
