@@ -59,6 +59,36 @@ class VideoDB
     }
     
     /**
+     * Gets requested fields from video
+     *
+     * @param video:            $id 
+     * @param fields to return: $columns 
+     * @return row
+     */
+    public function fetchCols($id, $columns)
+    {
+        try 
+        {  
+            $this->connect();
+            $columns = implode(", ", $columns);
+            $statement = $this->dbh->prepare("SELECT $columns FROM videos WHERE id = $id");
+            $statement->execute();
+            $row = $statement->fetch(PDO::FETCH_ASSOC);
+            $this->disconnect();
+            return $row;
+        } catch (Exception $e) 
+        {
+            if($this->dbh)
+            {
+                $this->disconnect();
+            }
+            error_log("Error while getting $columns:".$e);
+            return false;
+        }
+    }
+    
+    
+    /**
      * Inserts new video into db
      *
      * @param string $title 
@@ -83,7 +113,7 @@ class VideoDB
             $statement->execute();
             $this->dbh->commit();
             $this->disconnect();
-            return $uploadPath;
+            return $id;
         } catch (Exception $e) 
         {
             if($this->dbh)
@@ -95,27 +125,16 @@ class VideoDB
         }
     }
     
-    public function getFilePaths($id)
-    {
-        try 
-        {  
-            $this->connect();
-            $statement = $this->dbh->prepare("SELECT FLV, MP4 FROM videos WHERE id = $id");
-            $statement->execute();
-            $row = $statement->fetch(PDO::FETCH_ASSOC);
-            $this->disconnect();
-            return $row;
-        } catch (Exception $e) 
-        {
-            if($this->dbh)
-            {
-                $this->disconnect();
-            }
-            error_log("Error while getting file names:".$e);
-            return false;
-        }
-    }
-    
+    /**
+     * Removes entire video entry
+     * if both files were removed from disk.
+     * Updates entry if only one file was removed.
+     *
+     * @param video $id 
+     * @param the files that was $deleted 
+     * @return True if entry was completely removed
+     *         False otherwise
+     */
     public function removeVideo($id, $deleted)
     {
         $completelyDeleted = false;
@@ -156,5 +175,7 @@ class VideoDB
         }
         return $completelyDeleted;
     }
+    
+    
 }
 ?>

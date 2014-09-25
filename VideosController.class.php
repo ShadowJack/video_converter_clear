@@ -9,8 +9,7 @@ class VideosController
     **/
     public function index()
     {
-        $videoModel = new VideoModel();
-        $videos = $videoModel->all();
+        $videos = VideoModel::all();
         include('templates/index.tmpl.php');
     }
     
@@ -21,8 +20,7 @@ class VideosController
     **/
     public function create()
     {
-        $videoModel = new VideoModel();
-        echo $videoModel->create($_POST['title'], $_FILES['newVideo']['tmp_name']);
+        echo VideoModel::create($_POST['title'], $_FILES['newVideo']['tmp_name']);
     }
     
     /**
@@ -41,8 +39,7 @@ class VideosController
      */
     public function delete($id)
     {
-        $videoModel = new VideoModel();
-        $videoModel->delete($id);
+        VideoModel::delete($id);
     }
     
     /**
@@ -53,7 +50,7 @@ class VideosController
      */
     public function flv($id)
     {
-        Video::flv($id);
+        VideoModel::flv($id);
     }
     
     /**
@@ -64,7 +61,7 @@ class VideosController
      */
     public function mp4($id)
     {
-        Video::mp4($id);
+        VideoModel::mp4($id);
     }
     
     /**
@@ -75,7 +72,7 @@ class VideosController
      */
     public function meta($id)
     {
-        $meta = Video::meta($id);
+        $meta = VideoModel::meta($id);
         include('templates/meta.tmpl.php');
     }
 }
