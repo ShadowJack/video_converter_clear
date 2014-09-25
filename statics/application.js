@@ -10,7 +10,7 @@ function deleteVideo(id)
         },
         error: function(msg)
         {
-            window.loaction.href = "";
+            console.log(msg);
         }
     });
 }

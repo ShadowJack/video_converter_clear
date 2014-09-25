@@ -1,5 +1,5 @@
 <?php
-require_once('Models/Video.class.php');
+require_once('VideoModel.class.php');
 
 class VideosController
 {
@@ -9,15 +9,9 @@ class VideosController
     **/
     public function index()
     {
-        $videos = Video::all();
-        if (is_string($videos))      // Video::all returned error
-        {
-            echo $videos;
-        }
-        else
-        {
-            include('Templates/index.tmpl.php');
-        }
+        $videoModel = new VideoModel();
+        $videos = $videoModel->all();
+        include('templates/index.tmpl.php');
     }
     
     /**
@@ -27,7 +21,8 @@ class VideosController
     **/
     public function create()
     {
-        echo Video::save($_POST['title'], $_FILES['newVideo']['tmp_name']);
+        $videoModel = new VideoModel();
+        echo $videoModel->create($_POST['title'], $_FILES['newVideo']['tmp_name']);
     }
     
     /**
@@ -35,7 +30,7 @@ class VideosController
     **/
     public function newVideo()
     {
-        include('Templates/newVideo.tmpl.php');
+        include('templates/newVideo.tmpl.php');
     }
     
     /**
@@ -46,21 +41,41 @@ class VideosController
      */
     public function delete($id)
     {
-        Video::delete($id);
+        $videoModel = new VideoModel();
+        $videoModel->delete($id);
     }
     
+    /**
+     * Check if flv file exists and send it
+     *
+     * @param string video $id 
+     * @return void
+     */
     public function flv($id)
     {
-        
+        Video::flv($id);
     }
     
+    /**
+     * Check if mp4 file exists and send it
+     *
+     * @param string video $id 
+     * @return void
+     */
     public function mp4($id)
     {
-        
+        Video::mp4($id);
     }
     
+    /**
+     * Get meta information about video
+     * and print on screen
+     * @param string $id
+     * @return void
+     */
     public function meta($id)
     {
-        
+        $meta = Video::meta($id);
+        include('templates/meta.tmpl.php');
     }
 }
