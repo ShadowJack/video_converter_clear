@@ -5,6 +5,11 @@ require_once 'paths.config.php';
 
 use Symfony\Component\Process\Process;
 
+/**
+ * Video Model
+ * contains methods that help 
+ * to work with Video data
+ */
 class VideoModel
 {
     /**
@@ -26,7 +31,7 @@ class VideoModel
      * @param path to uploaded file  -  $tmpPath
      * @return response string
      */
-    public static function create($title, $tmpPath)
+    public static function create( $title, $tmpPath )
     {   
         $db = new VideoDB();
         // check if there is less then 5 processes   
@@ -54,18 +59,18 @@ class VideoModel
         if ( move_uploaded_file( $tmpPath, "upload/$id.flv" ) )
         {
             //create new converting Process
-            $process = new Process(Paths::$ffmpeg." -i upload/$id.flv -s $dimensions".
+            $process = new Process( Paths::$ffmpeg." -i upload/$id.flv -s $dimensions".
                                     " -b:v ".ceil($videoBitrate/1000)."k -ar ".
-                                    ceil($audioBitrate/1000)."k upload/$id.mp4");
-            $process->setTimeout(3600); // kill the process after an hour
+                                    ceil($audioBitrate/1000)."k upload/$id.mp4" );
+            $process->setTimeout( 3600 ); // kill the process after an hour
             $process->run();
-            if ($process->isSuccessful())
+            if ( $process->isSuccessful() )
             {
-                $db->updateCols($id, Array('MP4' => "'upload/$id.mp4'", 'status' => "'f'"));
+                $db->updateCols( $id, Array( 'MP4' => "'upload/$id.mp4'", 'status' => "'f'" ) );
             }
             else
             {
-                error_log($process->getIncrementalErrorOutput());
+                error_log( $process->getIncrementalErrorOutput() );
             }
             return "<p>Your file was successfully uploaded!</p><a href=''> Go to index </a>";
         }
@@ -83,17 +88,17 @@ class VideoModel
      * @param id in the db - $id
      * @return true if it was successful
      */
-    public static function delete($id)
+    public static function delete( $id )
     {  
         $db = new VideoDB();
-        $paths = $db->fetchCols($id, Array('FLV', 'MP4'));
+        $paths = $db->fetchCols( $id, Array( 'FLV', 'MP4' ) );
         if ( $paths === false ) // fetchCols was unsuccessfull
         {
             return false;
         }
         
         // delete from disk
-        $deleted = Array('FLV' => true, 'MP4' => true);
+        $deleted = Array( 'FLV' => true, 'MP4' => true );
         if ( ( $paths['FLV'] != null ) && ( $paths['FLV'] != '' ) )
         {
             if ( !unlink( $paths['FLV'] ) )
@@ -119,25 +124,25 @@ class VideoModel
      * @param string video $id 
      * @return false if fetching from DB was unsuccessfull
      */
-    public static function flv($id)
+    public static function flv( $id )
     {
         $db = new VideoDB();
-        $row = $db->fetchCols($id, Array('title', 'FLV'));
+        $row = $db->fetchCols( $id, Array( 'title', 'FLV' ) );
         $filePath = $row['FLV'];
         $title = $row['title'];
         if ( !$filePath )
         {
             return false;
         }
-        if (file_exists($filePath)) 
+        if ( file_exists( $filePath ) ) 
         {
-            header($_SERVER["SERVER_PROTOCOL"] . " 200 OK");
-            header("Cache-Control: public");
-            header("Content-Type: video/x-flv");
-            header("Content-Transfer-Encoding: Binary");
-            header("Content-Length:".filesize($filePath));
-            header("Content-Disposition: attachment; filename=$title");
-            readfile($filePath);
+            header( $_SERVER["SERVER_PROTOCOL"] . " 200 OK" );
+            header( "Cache-Control: public" );
+            header( "Content-Type: video/x-flv" );
+            header( "Content-Transfer-Encoding: Binary" );
+            header( "Content-Length:".filesize( $filePath ) );
+            header( "Content-Disposition: attachment; filename=$title" );
+            readfile( $filePath );
             die();        
         }
     }
@@ -155,19 +160,19 @@ class VideoModel
         $row = $db->fetchCols( $id, Array( 'title', 'MP4' ) );
         $filePath = $row['MP4'];
         $title = $row['title'];
-        if (file_exists($filePath)) {
-            header($_SERVER["SERVER_PROTOCOL"] . " 200 OK");
-            header("Cache-Control: public");
-            header("Content-Type: video/mp4");
-            header("Content-Transfer-Encoding: Binary");
-            header("Content-Length:".filesize($filePath));
-            header("Content-Disposition: attachment; filename=$title");
-            readfile($filePath);
+        if ( file_exists( $filePath ) ) {
+            header( $_SERVER["SERVER_PROTOCOL"] . " 200 OK" );
+            header( "Cache-Control: public" );
+            header( "Content-Type: video/mp4" );
+            header( "Content-Transfer-Encoding: Binary" );
+            header( "Content-Length:".filesize( $filePath ) );
+            header( "Content-Disposition: attachment; filename=$title" );
+            readfile( $filePath );
             die();        
         } 
         else 
         {
-            die("Sorry: File not found.");
+            die( "Sorry: File not found." );
         }
     }
     
@@ -178,10 +183,10 @@ class VideoModel
      * @return array of title, dimensions, 
      * video bitrate and audio bitrate
      */
-    public static function meta($id)
+    public static function meta( $id )
     {
         $db = new VideoDB();
-        return $db->fetchCols($id, Array('title', 'dimensions', 'bv', 'ba'));
+        return $db->fetchCols( $id, Array( 'title', 'dimensions', 'bv', 'ba' ) );
     }
 }
     

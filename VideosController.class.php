@@ -10,7 +10,7 @@ class VideosController
     public function index()
     {
         $videos = VideoModel::all();
-        include('templates/index.tmpl.php');
+        include( 'templates/index.tmpl.php' );
     }
     
     /**
@@ -20,7 +20,7 @@ class VideosController
     **/
     public function create()
     {
-        echo VideoModel::create($_POST['title'], $_FILES['newVideo']['tmp_name']);
+        echo VideoModel::create( $_POST['title'], $_FILES['newVideo']['tmp_name'] );
     }
     
     /**
@@ -28,7 +28,7 @@ class VideosController
     **/
     public function newVideo()
     {
-        include('templates/newVideo.tmpl.php');
+        include( 'templates/newVideo.tmpl.php' );
     }
     
     /**
@@ -37,9 +37,9 @@ class VideosController
      *
      * @param video id in the db - $id
      */
-    public function delete($id)
+    public function delete( $id )
     {
-        VideoModel::delete($id);
+        VideoModel::delete( $id );
     }
     
     /**
@@ -48,9 +48,9 @@ class VideosController
      * @param string video $id 
      * @return void
      */
-    public function flv($id)
+    public function flv( $id )
     {
-        VideoModel::flv($id);
+        VideoModel::flv( $id );
     }
     
     /**
@@ -59,9 +59,9 @@ class VideosController
      * @param string video $id 
      * @return void
      */
-    public function mp4($id)
+    public function mp4( $id )
     {
-        VideoModel::mp4($id);
+        VideoModel::mp4( $id );
     }
     
     /**
@@ -70,9 +70,9 @@ class VideosController
      * @param string $id
      * @return void
      */
-    public function meta($id)
+    public function meta( $id )
     {
-        $meta = VideoModel::meta($id);
-        include('templates/meta.tmpl.php');
+        $meta = VideoModel::meta( $id );
+        include( 'templates/meta.tmpl.php' );
     }
 }
