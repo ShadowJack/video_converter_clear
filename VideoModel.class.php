@@ -27,6 +27,7 @@ class VideoModel
      */
     public static function create($title, $tmpPath)
     {   
+        $db = new VideoDB();
         // check if there is less then 5 processes   
         $count = $db->getConvertingCount();
         if ( $count == -1 )
@@ -47,7 +48,7 @@ class VideoModel
         $audioBitrate = $audioStream['bit_rate'];
         
         // Add new entry to DB
-        $db = new VideoDB();
+        
         $id = $db->insertVideo( $title, $dimensions, $videoBitrate, $audioBitrate );
         
         // Move file from temporary dir to upload/
