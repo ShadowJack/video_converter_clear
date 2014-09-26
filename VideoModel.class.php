@@ -26,7 +26,17 @@ class VideoModel
      * @return response string
      */
     public static function create($title, $tmpPath)
-    {       
+    {   
+        // check if there is less then 5 processes   
+        $count = $db->getConvertingCount();
+        if ( $count == -1 )
+        {
+            return "Error while getting ConvertingCount!";
+        }
+        elseif ( $count >= 5 )
+        {
+            return "Please try later - there is too many files converting right now.";
+        }
         // Get info about file using ffprobe
         //TODO: do something with path to ffprobe - set in config file
         exec( '/usr/local/Cellar/ffmpeg/2.3.3/bin/ffprobe -v quiet -print_format json -show_streams '.$tmpPath, $output );
@@ -43,31 +53,21 @@ class VideoModel
         // Move file from temporary dir to upload/
         if ( move_uploaded_file( $tmpPath, "upload/$id.flv" ) )
         {
-            $count = $db->getConvertingCount();
-            if ( $count == -1 )
+            //create new Process
+            $process = new Process("/usr/local/Cellar/ffmpeg/2.3.3/bin/ffmpeg".
+                                    " -i upload/$id.flv -s $dimensions -b:v ".
+                                    ceil($videoBitrate/1000)."k -ar ".
+                                    ceil($audioBitrate/1000)."k upload/$id.mp4");
+            $process->setTimeout(3600); // kill the process after an hour
+            $process->run();
+            if ($process->isSuccessful())
             {
-                //TODO: add to conversion queue
-                return "Error when tried to convert has occured!";
+                $db->updateCols($id, Array('MP4' => "'upload/$id.mp4'", 'status' => "'f'"));
+                //TODO: check if there any queued video
             }
-            if ( $count < 5 )
+            else
             {
-                //create new Process
-                $process = new Process("/usr/local/Cellar/ffmpeg/2.3.3/bin/ffmpeg".
-                                        " -i upload/$id.flv -s $dimensions -b:v ".
-                                        ceil($videoBitrate/1000)."k -ar ".
-                                        ceil($audioBitrate/1000)."k upload/$id.mp4");
-                $process->setTimeout(3600); // kill the process after an hour
-                $process->run();
-                if ($process->isSuccessful())
-                {
-                    $db->updateCols($id, Array('MP4' => "'upload/$id.mp4'", 'status' => "'s'"));
-                    //TODO: check if there any queued video
-                }
-                else
-                {
-                    error_log($process->getIncrementalErrorOutput());
-                }
-                // set status to 'c'
+                error_log($process->getIncrementalErrorOutput());
             }
             return "<p>Your file was successfully uploaded!</p><a href=''> Go to index </a>";
         }

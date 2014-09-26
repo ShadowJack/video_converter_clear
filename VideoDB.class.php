@@ -175,8 +175,8 @@ class VideoDB
             $statement->execute();
             $id = $statement->fetch(PDO::FETCH_ASSOC)['Auto_increment'];
             $uploadPath = "upload/$id.flv";
-            $statement = $this->dbh->prepare("INSERT INTO videos(title, FLV, dimensions, bv, ba, created)".
-                         " VALUES('$title', '$uploadPath', '$dimensions', '$videoBitrate', '$audioBitrate', NOW())");
+            $statement = $this->dbh->prepare("INSERT INTO videos(title, FLV, dimensions, bv, ba, created, status)".
+                         " VALUES('$title', '$uploadPath', '$dimensions', '$videoBitrate', '$audioBitrate', NOW(), 'c')");
             $statement->execute();
             $this->dbh->commit();
             $this->disconnect();
