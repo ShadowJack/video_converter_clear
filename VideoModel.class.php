@@ -1,6 +1,7 @@
 <?php
 require_once 'vendor/autoload.php';
 require_once 'VideoDB.class.php';
+require_once 'paths.config.php';
 
 use Symfony\Component\Process\Process;
 
@@ -39,32 +40,28 @@ class VideoModel
             return "Please try later - there is too many files converting right now.";
         }
         // Get info about file using ffprobe
-        //TODO: do something with path to ffprobe - set in config file
-        exec( '/usr/local/Cellar/ffmpeg/2.3.3/bin/ffprobe -v quiet -print_format json -show_streams '.$tmpPath, $output );
+        exec( Paths::$ffprobe.' -v quiet -print_format json -show_streams '.$tmpPath, $output );
         $videoStream = json_decode( implode( '', $output ), true )['streams'][0];
         $audioStream = json_decode( implode( '', $output ), true )['streams'][1];
         $dimensions = $videoStream['width']."x".$videoStream['height'];
         $videoBitrate = $videoStream['bit_rate'];
         $audioBitrate = $audioStream['bit_rate'];
         
-        // Add new entry to DB
-        
+        // Add new entry to DB       
         $id = $db->insertVideo( $title, $dimensions, $videoBitrate, $audioBitrate );
         
         // Move file from temporary dir to upload/
         if ( move_uploaded_file( $tmpPath, "upload/$id.flv" ) )
         {
-            //create new Process
-            $process = new Process("/usr/local/Cellar/ffmpeg/2.3.3/bin/ffmpeg".
-                                    " -i upload/$id.flv -s $dimensions -b:v ".
-                                    ceil($videoBitrate/1000)."k -ar ".
+            //create new converting Process
+            $process = new Process(Paths::$ffmpeg." -i upload/$id.flv -s $dimensions".
+                                    " -b:v ".ceil($videoBitrate/1000)."k -ar ".
                                     ceil($audioBitrate/1000)."k upload/$id.mp4");
             $process->setTimeout(3600); // kill the process after an hour
             $process->run();
             if ($process->isSuccessful())
             {
                 $db->updateCols($id, Array('MP4' => "'upload/$id.mp4'", 'status' => "'f'"));
-                //TODO: check if there any queued video
             }
             else
             {
@@ -186,9 +183,6 @@ class VideoModel
         $db = new VideoDB();
         return $db->fetchCols($id, Array('title', 'dimensions', 'bv', 'ba'));
     }
-    
-    
-    
 }
     
 ?>
