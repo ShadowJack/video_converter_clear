@@ -1,7 +1,7 @@
 video_converter_clear
 =====================
 
-=DB Schema
+##DB Schema
  * id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
  * title VARCHAR(100)
  * FLV VARCHAR(100)
@@ -9,7 +9,7 @@ video_converter_clear
  * created DATETIME DEFAULT NULL
  * status VARCHAR(1) - c: converting, f - finished
 
-=Actions
+##Actions
 * GET: /videos - получить список всех видео
 * GET: /videos/new - форма для добавления нового файла
 * POST: /videos - залить файл
