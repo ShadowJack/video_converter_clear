@@ -16,5 +16,5 @@ echo "<tr><td>".$row['id']."</td><td>".
                 "<button onclick='deleteVideo(".$row['id'].")'>Delete</button></td></tr>";
 }
 echo "</tbody></table>";
-echo "<a href='new'>Add new video</a>"
+echo "<a href='/video_converter/videos/new'>Add new video</a>"
 ?>

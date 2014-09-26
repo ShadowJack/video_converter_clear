@@ -1,4 +1,15 @@
 <?php
+/**
+ * Class that manipulates with data in the db
+ * Schema:
+ * id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+ * title VARCHAR(100)
+ * FLV VARCHAR(100)
+ * MP4 VARCHAR(100)
+ * created DATETIME DEFAULT NULL
+ * status VARCHAR(1) - c: converting, f - finished, q - queued
+ *
+ */
 class VideoDB
 {
     // MySQL db credentials
@@ -87,6 +98,62 @@ class VideoDB
         }
     }
     
+    /**
+     * Gets the number of videos that are
+     * being converted
+     * @return number of videos
+     */
+    public function getConvertingCount()
+    {
+        try 
+        {  
+            $this->connect();
+            $count = $this->dbh->query("SELECT COUNT(*) FROM videos WHERE status = 'c'");
+            $this->disconnect();
+            return $count->fetchColumn();
+        } catch (Exception $e) 
+        {
+            if($this->dbh)
+            {
+                $this->disconnect();
+            }
+            error_log("Error while getting number of converting videos:".$e);
+            return -1;
+        }
+    }
+    
+    /**
+     * Update row in table
+     *
+     * @param string $id 
+     * @param string $cols - array('col_name' => new_value, ...)
+     * @return boolean
+     */
+    public function updateCols($id, $cols)
+    {
+        $arr = array();
+        foreach($cols as $k => $v)
+        {
+            array_push($arr, $k."=".$v);
+        }
+        $str = implode(", ", $arr);
+        error_log($str);
+        try
+        {
+            $this->connect();
+            $this->dbh->query("UPDATE videos SET $str WHERE id=$id");
+            $this->disconnect();
+            return true;
+        } catch (Exception $e) 
+        {
+            if($this->dbh)
+            {
+                $this->disconnect();
+            }
+            error_log("Error while updating rows: $str :".$e);
+            return false;
+        }
+    }
     
     /**
      * Inserts new video into db

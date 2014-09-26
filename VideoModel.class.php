@@ -43,7 +43,32 @@ class VideoModel
         // Move file from temporary dir to upload/
         if ( move_uploaded_file( $tmpPath, "upload/$id.flv" ) )
         {
-            //TODO: send file to conversion queue
+            $count = $db->getConvertingCount();
+            if ( $count == -1 )
+            {
+                //TODO: add to conversion queue
+                return "Error when tried to convert has occured!";
+            }
+            if ( $count < 5 )
+            {
+                //create new Process
+                $process = new Process("/usr/local/Cellar/ffmpeg/2.3.3/bin/ffmpeg".
+                                        " -i upload/$id.flv -s $dimensions -b:v ".
+                                        ceil($videoBitrate/1000)."k -ar ".
+                                        ceil($audioBitrate/1000)."k upload/$id.mp4");
+                $process->setTimeout(3600); // kill the process after an hour
+                $process->run();
+                if ($process->isSuccessful())
+                {
+                    $db->updateCols($id, Array('MP4' => "'upload/$id.mp4'", 'status' => "'s'"));
+                    //TODO: check if there any queued video
+                }
+                else
+                {
+                    error_log($process->getIncrementalErrorOutput());
+                }
+                // set status to 'c'
+            }
             return "<p>Your file was successfully uploaded!</p><a href=''> Go to index </a>";
         }
         else
@@ -148,7 +173,13 @@ class VideoModel
         }
     }
     
-    
+    /**
+     * Get metadata from files
+     *
+     * @param video $id 
+     * @return array of title, dimensions, 
+     * video bitrate and audio bitrate
+     */
     public static function meta($id)
     {
         $db = new VideoDB();
