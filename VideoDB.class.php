@@ -12,12 +12,18 @@
  */
 class VideoDB
 {
-    // MySQL db credentials
     protected $dbAddress = 'mysql:host=127.0.0.1;dbname=videos_db';
     protected $dbUser = 'dbowner';
     protected $dbPassword = 'password';
     protected $dbh; 
     
+    /**
+     * Constructor
+     *
+     * @param string $dbAddress - db credentials
+     * @param string $dbUser - DB username
+     * @param string $dbPassword
+     */
     public function __construct( $dbAddress = null, $dbUser = null, $dbPassword = null )
     {
         if ( $dbAddress )
@@ -72,16 +78,16 @@ class VideoDB
     /**
      * Gets requested fields from video
      *
-     * @param video:            $id 
-     * @param fields to return: $columns 
-     * @return row
+     * @param string $id 
+     * @param array $columns fields to return
+     * @return row from db/ false in case of error
      */
     public function fetchCols( $id, $columns )
     {
         try 
         {  
             $this->connect();
-            $columns = implode( ", ", $columns );
+            $columns = implode( ', ', $columns );
             $statement = $this->dbh->prepare( "SELECT $columns FROM videos WHERE id = $id" );
             $statement->execute();
             $row = $statement->fetch( PDO::FETCH_ASSOC );
@@ -101,6 +107,7 @@ class VideoDB
     /**
      * Gets the number of videos that are
      * being converted
+     *
      * @return number of videos
      */
     public function getConvertingCount()
@@ -117,26 +124,26 @@ class VideoDB
             {
                 $this->disconnect();
             }
-            error_log( "Error while getting number of converting videos:".$e );
+            error_log( 'Error while getting number of converting videos: '.$e );
             return -1;
         }
     }
     
     /**
-     * Update row in table
+     * Update row in a table
      *
      * @param string $id 
-     * @param string $cols - array('col_name' => new_value, ...)
-     * @return boolean
+     * @param array $cols ['col_name' => new_value, ...]
+     * @return boolean success
      */
     public function updateCols( $id, $cols )
     {
         $arr = array();
         foreach( $cols as $k => $v )
         {
-            array_push( $arr, $k."=".$v );
+            array_push( $arr, $k.'='.$v );
         }
-        $str = implode( ", ", $arr );
+        $str = implode( ', ', $arr );
         try
         {
             $this->connect();
@@ -161,8 +168,8 @@ class VideoDB
      * @param string $dimensions 
      * @param string $videoBitrate 
      * @param string $audioBitrate 
-     * @return path where file should be moved
-     */
+     * @return string path where file should be moved
+     **/
     public function insertVideo( $title, $dimensions, $videoBitrate, $audioBitrate )
     {
         try 
@@ -174,7 +181,7 @@ class VideoDB
             $statement->execute();
             $id = $statement->fetch( PDO::FETCH_ASSOC )['Auto_increment'];
             $uploadPath = "upload/$id.flv";
-            $statement = $this->dbh->prepare( "INSERT INTO videos(title, FLV, dimensions, bv, ba, created, status)".
+            $statement = $this->dbh->prepare( 'INSERT INTO videos(title, FLV, dimensions, bv, ba, created, status)'.
                          " VALUES('$title', '$uploadPath', '$dimensions', '$videoBitrate', '$audioBitrate', NOW(), 'c')" );
             $statement->execute();
             $this->dbh->commit();
@@ -196,8 +203,8 @@ class VideoDB
      * if both files were removed from disk.
      * Updates entry if only one file was removed.
      *
-     * @param video $id 
-     * @param the files that was $deleted 
+     * @param string $id 
+     * @param array $deleted - ['flv' => true, 'mp4' => true]
      * @return True if entry was completely removed
      *         False otherwise
      */
@@ -236,7 +243,7 @@ class VideoDB
             {
                 $this->disconnect();
             }
-            error_log( "Error while deleting video from db".$e );
+            error_log( 'Error while deleting video from db '.$e );
             $completelyDeleted = false;
         }
         return $completelyDeleted;

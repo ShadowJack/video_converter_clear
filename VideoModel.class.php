@@ -17,7 +17,7 @@ class VideoModel
      *
      * @return array of videos
      */
-    public static function all()
+    public static function fetchAll()
     {
         $db = new VideoDB();
         return $db->fetchAll();
@@ -27,28 +27,29 @@ class VideoModel
      * Save info about file into db,
      * move file from tmp folder to uploads/
      * and send it to conversion
-     * @param  video title           -  $title
-     * @param path to uploaded file  -  $tmpPath
+     *
+     * @param string $title video title
+     * @param string $tmpPath path to uploaded file
      * @return response string
      */
-    public static function create( $title, $tmpPath )
+    public static function createVideo( $title, $tmpPath )
     {   
         $db = new VideoDB();
         // check if there is less then 5 processes   
         $count = $db->getConvertingCount();
         if ( $count == -1 )
         {
-            return "Error while getting ConvertingCount!";
+            return 'Error while getting ConvertingCount!';
         }
         elseif ( $count >= 5 )
         {
-            return "Please try later - there is too many files converting right now.";
+            return 'Please try later - there is too many files converting right now.';
         }
         // Get info about file using ffprobe
         exec( Paths::$ffprobe.' -v quiet -print_format json -show_streams '.$tmpPath, $output );
         $videoStream = json_decode( implode( '', $output ), true )['streams'][0];
         $audioStream = json_decode( implode( '', $output ), true )['streams'][1];
-        $dimensions = $videoStream['width']."x".$videoStream['height'];
+        $dimensions = $videoStream['width'].'x'.$videoStream['height'];
         $videoBitrate = $videoStream['bit_rate'];
         $audioBitrate = $audioStream['bit_rate'];
         
@@ -56,11 +57,11 @@ class VideoModel
         $id = $db->insertVideo( $title, $dimensions, $videoBitrate, $audioBitrate );
         
         // Move file from temporary dir to upload/
-        if ( move_uploaded_file( $tmpPath, "upload/$id.flv" ) )
+        if ( move_uploaded_file( $tmpPath, 'upload/$id.flv' ) )
         {
             //create new converting Process
             $process = new Process( Paths::$ffmpeg." -i upload/$id.flv -s $dimensions".
-                                    " -b:v ".ceil($videoBitrate/1000)."k -ar ".
+                                    ' -b:v '.ceil($videoBitrate/1000).'k -ar '.
                                     ceil($audioBitrate/1000)."k upload/$id.mp4" );
             $process->setTimeout( 3600 ); // kill the process after an hour
             $process->run();
@@ -85,10 +86,10 @@ class VideoModel
      * Deletes both flv and mp4 videos from disk,
      * removes them from db
      *
-     * @param id in the db - $id
-     * @return true if it was successful
+     * @param string $id
+     * @return void
      */
-    public static function delete( $id )
+    public static function deleteVideo( $id )
     {  
         $db = new VideoDB();
         $paths = $db->fetchCols( $id, Array( 'FLV', 'MP4' ) );
@@ -121,29 +122,29 @@ class VideoModel
      * Get the file entry in db,
      * if flv file exists on disk - send it
      * 
-     * @param string video $id 
-     * @return false if fetching from DB was unsuccessfull
+     * @param string $id 
+     * @return true on success/false in other case
      */
-    public static function flv( $id )
+    public static function getFlv( $id )
     {
         $db = new VideoDB();
         $row = $db->fetchCols( $id, Array( 'title', 'FLV' ) );
         $filePath = $row['FLV'];
         $title = $row['title'];
-        if ( !$filePath )
+        if ( !$filePath || !file_exists( $filePath ) )
         {
             return false;
         }
-        if ( file_exists( $filePath ) ) 
+        else
         {
-            header( $_SERVER["SERVER_PROTOCOL"] . " 200 OK" );
-            header( "Cache-Control: public" );
-            header( "Content-Type: video/x-flv" );
-            header( "Content-Transfer-Encoding: Binary" );
-            header( "Content-Length:".filesize( $filePath ) );
-            header( "Content-Disposition: attachment; filename=$title" );
+            header( $_SERVER['SERVER_PROTOCOL'] . ' 200 OK' );
+            header( 'Cache-Control: public' );
+            header( 'Content-Type: video/x-flv' );
+            header( 'Content-Transfer-Encoding: Binary' );
+            header( 'Content-Length:'.filesize( $filePath ) );
+            header( 'Content-Disposition: attachment; filename=$title' );
             readfile( $filePath );
-            die();        
+            return true;
         }
     }
     
@@ -151,39 +152,40 @@ class VideoModel
      * Get the file entry in db,
      * if mp4 file exists on disk - send it
      * 
-     * @param string video $id 
-     * @return void
+     * @param string $id 
+     * @return true on success/false in other case
      */
-    public static function mp4( $id )
+    public static function getMp4( $id )
     {
         $db = new VideoDB();
         $row = $db->fetchCols( $id, Array( 'title', 'MP4' ) );
         $filePath = $row['MP4'];
         $title = $row['title'];
-        if ( file_exists( $filePath ) ) {
-            header( $_SERVER["SERVER_PROTOCOL"] . " 200 OK" );
-            header( "Cache-Control: public" );
-            header( "Content-Type: video/mp4" );
-            header( "Content-Transfer-Encoding: Binary" );
-            header( "Content-Length:".filesize( $filePath ) );
-            header( "Content-Disposition: attachment; filename=$title" );
-            readfile( $filePath );
-            die();        
-        } 
+        if ( !$filePath || !file_exists( $filePath ) )
+        {
+            return false;
+        }
         else 
         {
-            die( "Sorry: File not found." );
+            header( $_SERVER['SERVER_PROTOCOL'] . ' 200 OK' );
+            header( 'Cache-Control: public' );
+            header( 'Content-Type: video/mp4' );
+            header( 'Content-Transfer-Encoding: Binary' );
+            header( 'Content-Length:'.filesize( $filePath ) );
+            header( 'Content-Disposition: attachment; filename=$title' );
+            readfile( $filePath );
+            return true;
         }
     }
     
     /**
      * Get metadata from files
      *
-     * @param video $id 
+     * @param string $id 
      * @return array of title, dimensions, 
      * video bitrate and audio bitrate
      */
-    public static function meta( $id )
+    public static function getMeta( $id )
     {
         $db = new VideoDB();
         return $db->fetchCols( $id, Array( 'title', 'dimensions', 'bv', 'ba' ) );

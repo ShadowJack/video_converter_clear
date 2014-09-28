@@ -16,7 +16,7 @@ elseif ( ( count( $args ) == 1 ) && ( $args[0] == 'new' ) && ( $method == 'GET' 
 elseif ( ( count( $args ) == 1 ) && ( preg_match( '/^\d+$/', $args[0] ) ) && ( $method == 'DELETE' ) )    // DELETE: /videos/:id
 {
     $videosController = new VideosController();
-    $videosController->delete( $args[0] );
+    $videosController->deleteVideo( $args[0] );
 }
 elseif ( ( count( $args ) == 2 ) && ( preg_match( '/^\d+$/', $args[0] ) ) && ( $method == 'GET' ) )      // GET: /videos/:id/:action
 {
@@ -27,6 +27,13 @@ else
     print_r( "No such action in VideosController" );
 }
 
+/**
+ * Matches paths to /videos
+ *
+ * GET: /videos, POST: /videos
+ * @param string $method http method
+ * @return void
+ */
 function matchVideos($method)
 {
     $videosController = new VideosController();
@@ -34,15 +41,23 @@ function matchVideos($method)
     switch ( $method )
     {
         case 'GET':
-            $videosController->index();
+            $videosController->getIndex();
             break;
         case 'POST':
-            $videosController->create();
+            $videosController->createVideo();
             break;
         default:
-            print_r( "No such action in VideosController" );
+            print_r( 'No such action in VideosController' );
     }
 }
+
+/**
+ * Matches /videos/:id/[flv, mp4, meta]
+ *
+ * @param string $id part of url
+ * @param string $action [flv, mp4, meta]
+ * @return void
+ */
 function matchVideosAction($id, $action)
 {
     $videosController = new VideosController();
@@ -50,16 +65,16 @@ function matchVideosAction($id, $action)
     switch ( $action )
     {
         case 'flv':
-            $videosController->flv( $id );
+            $videosController->getFlv( $id );
             break;
         case 'mp4':
-            $videosController->mp4( $id );
+            $videosController->getMp4( $id );
             break;
         case 'meta':
-            $videosController->meta( $id );
+            $videosController->getMeta( $id );
             break;
         default:
-            print_r( "No such action in VideosController" );
+            print_r( 'No such action in VideosController' );
     }
 }
 ?>
