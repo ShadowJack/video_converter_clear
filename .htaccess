@@ -3,6 +3,6 @@
     RewriteRule ^statics/ - [L,NC]
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule videos/(.*)$ router.php?init_req=$1 [QSA,NC,L]
-    RewriteRule videos router.php?init_req=
+    RewriteRule videos/(.*)$ index.php?init_req=$1 [QSA,NC,L]
+    RewriteRule videos index.php?init_req=
 </IfModule>
