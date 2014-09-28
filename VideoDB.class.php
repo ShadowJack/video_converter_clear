@@ -41,26 +41,6 @@ class VideoDB
     }
     
     /**
-     * Connects to db
-     *
-     * @return void
-     */
-    protected function connect()
-    {
-        $this->dbh = new PDO( $this->dbAddress, $this->dbUser, $this->dbPassword );
-    }
-    
-    /**
-     * Disconnects from db
-     *
-     * @return void
-     */
-    protected function disconnect()
-    {
-        $this->dbh = null;
-    }
-    
-    /**
      * Gets all videos from db
      *
      * @return array of all videos
@@ -249,6 +229,24 @@ class VideoDB
         return $completelyDeleted;
     }
     
+    /**
+     * Connects to db
+     *
+     * @return void
+     */
+    private function connect()
+    {
+        $this->dbh = new PDO( $this->dbAddress, $this->dbUser, $this->dbPassword );
+    }
     
+    /**
+     * Disconnects from db
+     *
+     * @return void
+     */
+    private function disconnect()
+    {
+        $this->dbh = null;
+    }
 }
 ?>

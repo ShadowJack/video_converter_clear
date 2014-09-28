@@ -52,12 +52,12 @@ class VideoModel
         $dimensions = $videoStream['width'].'x'.$videoStream['height'];
         $videoBitrate = $videoStream['bit_rate'];
         $audioBitrate = $audioStream['bit_rate'];
-        
+
         // Add new entry to DB       
         $id = $db->insertVideo( $title, $dimensions, $videoBitrate, $audioBitrate );
-        
+
         // Move file from temporary dir to upload/
-        if ( move_uploaded_file( $tmpPath, 'upload/$id.flv' ) )
+        if ( move_uploaded_file( $tmpPath, "upload/$id.flv" ) )
         {
             //create new converting Process
             $process = new Process( Paths::$ffmpeg." -i upload/$id.flv -s $dimensions".
@@ -142,7 +142,7 @@ class VideoModel
             header( 'Content-Type: video/x-flv' );
             header( 'Content-Transfer-Encoding: Binary' );
             header( 'Content-Length:'.filesize( $filePath ) );
-            header( 'Content-Disposition: attachment; filename=$title' );
+            header( "Content-Disposition: attachment; filename=$title" );
             readfile( $filePath );
             return true;
         }
@@ -172,7 +172,7 @@ class VideoModel
             header( 'Content-Type: video/mp4' );
             header( 'Content-Transfer-Encoding: Binary' );
             header( 'Content-Length:'.filesize( $filePath ) );
-            header( 'Content-Disposition: attachment; filename=$title' );
+            header( "Content-Disposition: attachment; filename=$title" );
             readfile( $filePath );
             return true;
         }
