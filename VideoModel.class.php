@@ -37,7 +37,7 @@ class VideoModel
         $db = new VideoDB();
         // check if there is less then 5 processes   
         $count = $db->getConvertingCount();
-        if ( $count == -1 )
+        if ( $count === false )
         {
             return 'Error while getting ConvertingCount!';
         }

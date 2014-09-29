@@ -1,4 +1,6 @@
 <?php
+
+require_once 'Database.class.php';
 /**
  * Class that manipulates with data in the db
  * Schema:
@@ -12,31 +14,23 @@
  */
 class VideoDB
 {
-    protected $dbAddress = 'mysql:host=127.0.0.1;dbname=videos_db';
-    protected $dbUser = 'dbowner';
-    protected $dbPassword = 'password';
-    protected $dbh; 
+    
+    private $database;
     
     /**
      * Constructor
      *
-     * @param string $dbAddress - db credentials
-     * @param string $dbUser - DB username
-     * @param string $dbPassword
+     * @param Database $db
      */
-    public function __construct( $dbAddress = null, $dbUser = null, $dbPassword = null )
+    public function __construct( $db = null )
     {
-        if ( $dbAddress )
+        if ( $db !== null )
         {
-            $this->dbAddress = $dbAddress;
+            $this->database = $db;
         }
-        if ( $dbUser )
+        else
         {
-            $this->dbUser = $dbUser;
-        }
-        if ( $dbPassword )
-        {
-            $this->dbPassword = $dbPassword;
+            $this->database = new Database();
         }
     }
     
@@ -47,11 +41,11 @@ class VideoDB
      */
     public function fetchAll()
     {
-        $this->connect();
-        $statement = $this->dbh->prepare( 'SELECT * from videos' );
-        $statement->execute();
-        $result = $statement->fetchAll();
-        $this->disconnect();
+        $this->database->connect();
+        $statement = $this->database->prepare( 'SELECT * from videos' );
+        $statement = $this->database->execute( $statement );
+        $result = $this->database->fetchAll( $statement );
+        $this->database->disconnect();
         return $result;
     }
     
@@ -66,18 +60,18 @@ class VideoDB
     {
         try 
         {  
-            $this->connect();
+            $this->database->connect();
             $columns = implode( ', ', $columns );
-            $statement = $this->dbh->prepare( "SELECT $columns FROM videos WHERE id = $id" );
-            $statement->execute();
-            $row = $statement->fetch( PDO::FETCH_ASSOC );
-            $this->disconnect();
+            $statement = $this->database->prepare( "SELECT $columns FROM videos WHERE id = $id" );
+            $statement = $this->database->execute( $statement );
+            $row = $this->database->fetch( $statement, PDO::FETCH_ASSOC );
+            $this->database->disconnect();
             return $row;
         } catch ( Exception $e ) 
         {
-            if ( $this->dbh )
+            if ( $this->database->isConnected() )
             {
-                $this->disconnect();
+                $this->database->disconnect();
             }
             error_log( "Error while getting $columns:".$e );
             return false;
@@ -88,24 +82,24 @@ class VideoDB
      * Gets the number of videos that are
      * being converted
      *
-     * @return number of videos
+     * @return number of videos/false if error
      */
     public function getConvertingCount()
     {
         try 
         {  
-            $this->connect();
-            $count = $this->dbh->query( "SELECT COUNT(*) FROM videos WHERE status = 'c'" );
-            $this->disconnect();
-            return $count->fetchColumn();
+            $this->database->connect();
+            $count = $this->database->query( "SELECT COUNT(*) FROM videos WHERE status = 'c'" );
+            $this->database->disconnect();
+            return $this->database->fetchColumn( $count );
         } catch ( Exception $e ) 
         {
-            if ( $this->dbh )
+            if ( $this->database->isConnected() )
             {
-                $this->disconnect();
+                $this->database->disconnect();
             }
             error_log( 'Error while getting number of converting videos: '.$e );
-            return -1;
+            return false;
         }
     }
     
@@ -126,15 +120,15 @@ class VideoDB
         $str = implode( ', ', $arr );
         try
         {
-            $this->connect();
-            $this->dbh->query( "UPDATE videos SET $str WHERE id=$id" );
-            $this->disconnect();
+            $this->database->connect();
+            $this->database->query( "UPDATE videos SET $str WHERE id=$id" );
+            $this->database->disconnect();
             return true;
         } catch ( Exception $e ) 
         {
-            if ( $this->dbh )
+            if ( $this->database->isConnected() )
             {
-                $this->disconnect();
+                $this->database->disconnect();
             }
             error_log( "Error while updating rows: $str :".$e );
             return false;
@@ -154,25 +148,24 @@ class VideoDB
     {
         try 
         {  
-            $this->connect();
-            $this->dbh->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
-            $this->dbh->beginTransaction();
-            $statement = $this->dbh->prepare( "SHOW TABLE STATUS LIKE 'videos'" );
-            $statement->execute();
-            $id = $statement->fetch( PDO::FETCH_ASSOC )['Auto_increment'];
+            $this->database->connect();
+            $this->database->beginTransaction();
+            $statement = $this->database->prepare( "SHOW TABLE STATUS LIKE 'videos'" );
+            $statement = $this->database->execute( $statement );
+            $id = $this->database->fetch( $statement, PDO::FETCH_ASSOC )['Auto_increment'];
             $uploadPath = "upload/$id.flv";
-            $statement = $this->dbh->prepare( 'INSERT INTO videos(title, FLV, dimensions, bv, ba, created, status)'.
-                         " VALUES('$title', '$uploadPath', '$dimensions', '$videoBitrate', '$audioBitrate', NOW(), 'c')" );
-            $statement->execute();
-            $this->dbh->commit();
-            $this->disconnect();
+            $statement = $this->database->prepare( 'INSERT INTO videos( title, FLV, dimensions, bv, ba, created, status )'.
+                         " VALUES( '$title', '$uploadPath', '$dimensions', '$videoBitrate', '$audioBitrate', NOW(), 'c' )" );
+            $statement = $this->database->execute( $statement );
+            $this->database->commit();
+            $this->database->disconnect();
             return $id;
         } catch ( Exception $e ) 
         {
-            if ( $this->dbh )
+            if ( $this->database->isConnected() )
             {
-                $this->dbh->rollBack();
-                $this->disconnect();
+                $this->database->rollBack();
+                $this->database->disconnect();
             }
             throw $e;
         }
@@ -193,60 +186,40 @@ class VideoDB
         $completelyDeleted = false;
         try
         {
-            $this->connect();
+            $this->database->connect();
             if ( ( $deleted['FLV'] == true ) && ( $deleted['MP4'] == true ) )   // delete entire entry from table
             {
-                $statement = $this->dbh->prepare("DELETE FROM videos WHERE id = $id");
-                $statement->execute();
+                $statement = $this->database->prepare( "DELETE FROM videos WHERE id = $id" );
+                $this->database->execute( $statement );
                 $completelyDeleted = true;
             }
             else
             {
-                $this->dbh->beginTransaction();
+                $this->database->beginTransaction();
                 if ( $deleted['FLV'] == true )                                  // delete just path to FLV file
                 {
-                    $statement = $this->dbh->prepare( "UPDATE videos SET FLV=NULL WHERE id = $id" );
-                    $statement->execute();
+                    $statement = $this->database->prepare( "UPDATE videos SET FLV=NULL WHERE id = $id" );
+                    $this->database->execute( $statement );
                 }
                 if ( $deleted['MP4'] == true )                                  // delete just path to MP4 file
                 {
                     $statement = $this->dbh->prepare( "UPDATE videos SET MP4=NULL WHERE id = $id" );
-                    $statement->execute();
+                    $this->database->execute( $statement );
                 }
-                $this->dbh->commit();
+                $this->database->commit();
             }
-            $this->disconnect();
+            $this->database->disconnect();
             
         } catch ( Exception $e )
         {
-            if( $this->dbh )
+            if( $this->database->isConnected() )
             {
-                $this->disconnect();
+                $this->database->disconnect();
             }
             error_log( 'Error while deleting video from db '.$e );
             $completelyDeleted = false;
         }
         return $completelyDeleted;
-    }
-    
-    /**
-     * Connects to db
-     *
-     * @return void
-     */
-    private function connect()
-    {
-        $this->dbh = new PDO( $this->dbAddress, $this->dbUser, $this->dbPassword );
-    }
-    
-    /**
-     * Disconnects from db
-     *
-     * @return void
-     */
-    private function disconnect()
-    {
-        $this->dbh = null;
     }
 }
 ?>
