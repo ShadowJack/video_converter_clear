@@ -67,7 +67,7 @@ class VideoModel
             $process->run();
             if ( $process->isSuccessful() )
             {
-                $db->updateCols( $id, Array( 'MP4' => "'upload/$id.mp4'", 'status' => "'f'" ) );
+                $db->updateCols( $id, Array( 'mp4' => "'upload/$id.mp4'", 'status' => "'f'" ) );
             }
             else
             {
@@ -77,7 +77,7 @@ class VideoModel
         }
         else
         {
-            $db->removeVideo( $id, Array( 'FLV' => true, 'MP4' => true ) );
+            $db->removeVideo( $id, Array( 'mp4' => true, 'mp4' => true ) );
             return "Couldn't upload your file\n";
         }
     }
@@ -92,26 +92,26 @@ class VideoModel
     public static function deleteVideo( $id )
     {  
         $db = new VideoDB();
-        $paths = $db->fetchCols( $id, Array( 'FLV', 'MP4' ) );
+        $paths = $db->fetchCols( $id, Array( 'flv', 'mp4' ) );
         if ( $paths === false ) // fetchCols was unsuccessfull
         {
             return false;
         }
         
         // delete from disk
-        $deleted = Array( 'FLV' => true, 'MP4' => true );
-        if ( ( $paths['FLV'] != null ) && ( $paths['FLV'] != '' ) )
+        $deleted = Array( 'flv' => true, 'mp4' => true );
+        if ( ( $paths['flv'] != null ) && ( $paths['flv'] != '' ) )
         {
-            if ( !unlink( $paths['FLV'] ) )
+            if ( !unlink( $paths['flv'] ) )
             {
-                $deleted['FLV'] = false;
+                $deleted['flv'] = false;
             }
         }
-        if ( ( $paths['MP4'] != null ) && ( $paths['MP4'] != '' ) )
+        if ( ( $paths['mp4'] != null ) && ( $paths['mp4'] != '' ) )
         {
-            if ( !unlink( $paths['MP4'] ) )
+            if ( !unlink( $paths['mp4'] ) )
             {
-                $deleted['MP4'] = false;
+                $deleted['mp4'] = false;
             }
         }
         
@@ -128,8 +128,8 @@ class VideoModel
     public static function getFlv( $id )
     {
         $db = new VideoDB();
-        $row = $db->fetchCols( $id, Array( 'title', 'FLV' ) );
-        $filePath = $row['FLV'];
+        $row = $db->fetchCols( $id, Array( 'title', 'flv' ) );
+        $filePath = $row['flv'];
         $title = $row['title'];
         if ( !$filePath || !file_exists( $filePath ) )
         {
@@ -158,8 +158,8 @@ class VideoModel
     public static function getMp4( $id )
     {
         $db = new VideoDB();
-        $row = $db->fetchCols( $id, Array( 'title', 'MP4' ) );
-        $filePath = $row['MP4'];
+        $row = $db->fetchCols( $id, Array( 'title', 'mp4' ) );
+        $filePath = $row['mp4'];
         $title = $row['title'];
         if ( !$filePath || !file_exists( $filePath ) )
         {
@@ -188,7 +188,7 @@ class VideoModel
     public static function getMeta( $id )
     {
         $db = new VideoDB();
-        return $db->fetchCols( $id, Array( 'title', 'dimensions', 'bv', 'ba' ) );
+        return $db->fetchCols( $id, Array( 'title', 'dimensions', 'video_bitrate', 'audio_bitrate' ) );
     }
 }
     

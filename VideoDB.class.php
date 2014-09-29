@@ -42,7 +42,7 @@ class VideoDB
     public function fetchAll()
     {
         $this->database->connect();
-        $result = $this->database->fetchAll( 'SELECT * from videos' );
+        $result = $this->database->fetchAll( 'SELECT * from video' );
         $this->database->disconnect();
         return $result;
     }
@@ -60,7 +60,7 @@ class VideoDB
         {  
             $this->database->connect();
             $columns = implode( ', ', $columns );
-            $row = $this->database->fetch( "SELECT $columns FROM videos WHERE id = $id" );
+            $row = $this->database->fetch( "SELECT $columns FROM video WHERE id = $id" );
             $this->database->disconnect();
             return $row;
         } catch ( Exception $e ) 
@@ -85,7 +85,7 @@ class VideoDB
         try 
         {  
             $this->database->connect();
-            $count = $this->database->fetchColumn( "SELECT COUNT(*) FROM videos WHERE status = 'c'" );
+            $count = $this->database->fetchColumn( "SELECT COUNT(*) FROM video WHERE status = 'c'" );
             $this->database->disconnect();
             return $count;
         } catch ( Exception $e ) 
@@ -117,7 +117,7 @@ class VideoDB
         try
         {
             $this->database->connect();
-            $this->database->execute( "UPDATE videos SET $str WHERE id=$id" );
+            $this->database->execute( "UPDATE video SET $str WHERE id=$id" );
             $this->database->disconnect();
             return true;
         } catch ( Exception $e ) 
@@ -146,9 +146,9 @@ class VideoDB
         {  
             $this->database->connect();
             $this->database->beginTransaction();
-            $id = $this->database->fetch( "SHOW TABLE STATUS LIKE 'videos'" )['Auto_increment'];
+            $id = $this->database->fetch( "SHOW TABLE STATUS LIKE 'video'" )['Auto_increment'];
             $uploadPath = "upload/$id.flv";
-            $this->database->execute( 'INSERT INTO videos( title, FLV, dimensions, bv, ba, created, status )'.
+            $this->database->execute( 'INSERT INTO video( title, flv, dimensions, video_bitrate, audio_bitrate, created, status )'.
                          " VALUES( '$title', '$uploadPath', '$dimensions', '$videoBitrate', '$audioBitrate', NOW(), 'c' )" );
             $this->database->commit();
             $this->database->disconnect();
@@ -180,23 +180,14 @@ class VideoDB
         try
         {
             $this->database->connect();
-            if ( ( $deleted['FLV'] == true ) && ( $deleted['MP4'] == true ) )   // delete entire entry from table
+            if ( ( $deleted['flv'] == true ) && ( $deleted['mp4'] == true ) )   // delete entire entry from table
             {
-                $this->database->execute( "DELETE FROM videos WHERE id = $id"  );
+                $this->database->execute( "DELETE FROM video WHERE id = $id"  );
                 $completelyDeleted = true;
             }
             else
             {
-                $this->database->beginTransaction();
-                if ( $deleted['FLV'] == true )                                  // delete just path to FLV file
-                {
-                    $this->database->execute( "UPDATE videos SET FLV=NULL WHERE id = $id" );
-                }
-                if ( $deleted['MP4'] == true )                                  // delete just path to MP4 file
-                {
-                    $this->dbh->execute( "UPDATE videos SET MP4=NULL WHERE id = $id" );
-                }
-                $this->database->commit();
+                removeEachVideo( $id, $deleted );
             }
             $this->database->disconnect();
             
@@ -210,6 +201,28 @@ class VideoDB
             $completelyDeleted = false;
         }
         return $completelyDeleted;
+    }
+    
+    /**
+     * Helper function updates info in video table
+     * about each deleted file
+     *
+     * @param string $id 
+     * @param string $deleted 
+     * @return void
+     */
+    private function removeEachVideo( $id, $deleted )
+    {
+        $this->database->beginTransaction();
+        if ( $deleted['flv'] == true )                                  // delete just path to FLV file
+        {
+            $this->database->execute( "UPDATE video SET flv=NULL WHERE id = $id" );
+        }
+        if ( $deleted['mp4'] == true )                                  // delete just path to MP4 file
+        {
+            $this->dbh->execute( "UPDATE video SET mp4=NULL WHERE id = $id" );
+        }
+        $this->database->commit();
     }
 }
 ?>
