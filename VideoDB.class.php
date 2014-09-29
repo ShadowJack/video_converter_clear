@@ -63,14 +63,15 @@ class VideoDB
             $row = $this->database->fetch( "SELECT $columns FROM video WHERE id = $id" );
             $this->database->disconnect();
             return $row;
-        } catch ( Exception $e ) 
+        }
+        catch ( Exception $e ) 
         {
             if ( $this->database->isConnected() )
             {
                 $this->database->disconnect();
             }
             error_log( "Error while getting $columns:".$e );
-            return false;
+            throw $e;
         }
     }
     
@@ -78,7 +79,7 @@ class VideoDB
      * Gets the number of videos that are
      * being converted
      *
-     * @return number of videos/false if error
+     * @return number of videos
      */
     public function getConvertingCount()
     {
@@ -88,14 +89,15 @@ class VideoDB
             $count = $this->database->fetchColumn( "SELECT COUNT(*) FROM video WHERE status = 'c'" );
             $this->database->disconnect();
             return $count;
-        } catch ( Exception $e ) 
+        } 
+        catch ( Exception $e ) 
         {
             if ( $this->database->isConnected() )
             {
                 $this->database->disconnect();
             }
             error_log( 'Error while getting number of converting videos: '.$e );
-            return false;
+            throw $e;
         }
     }
     
@@ -120,14 +122,15 @@ class VideoDB
             $this->database->execute( "UPDATE video SET $str WHERE id=$id" );
             $this->database->disconnect();
             return true;
-        } catch ( Exception $e ) 
+        } 
+        catch ( Exception $e ) 
         {
             if ( $this->database->isConnected() )
             {
                 $this->database->disconnect();
             }
             error_log( "Error while updating rows: $str :".$e );
-            return false;
+            throw $e;
         }
     }
     
@@ -145,6 +148,7 @@ class VideoDB
         try 
         {  
             $this->database->connect();
+            $this->database->execute("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE");
             $this->database->beginTransaction();
             $id = $this->database->fetch( "SHOW TABLE STATUS LIKE 'video'" )['Auto_increment'];
             $uploadPath = "upload/$id.flv";
@@ -153,7 +157,8 @@ class VideoDB
             $this->database->commit();
             $this->database->disconnect();
             return $id;
-        } catch ( Exception $e ) 
+        } 
+        catch ( Exception $e ) 
         {
             if ( $this->database->isConnected() )
             {
@@ -191,7 +196,8 @@ class VideoDB
             }
             $this->database->disconnect();
             
-        } catch ( Exception $e )
+        } 
+        catch ( Exception $e )
         {
             if( $this->database->isConnected() )
             {

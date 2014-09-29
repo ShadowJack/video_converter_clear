@@ -93,9 +93,9 @@ class VideoModel
     {  
         $db = new VideoDB();
         $paths = $db->fetchCols( $id, Array( 'flv', 'mp4' ) );
-        if ( $paths === false ) // fetchCols was unsuccessfull
+        if ( !$paths ) // fetchCols was unsuccessfull
         {
-            return false;
+            return;
         }
         
         // delete from disk
