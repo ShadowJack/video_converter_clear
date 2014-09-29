@@ -69,66 +69,60 @@ class Database
      * @param string $queryString string to prepare
      * @return PDOStatment that can be executed later
      */
-    public function prepare( $queryString )
+    private function prepare( $queryString )
     {
         return $this->dbh->prepare( $queryString );
     }
     
     /**
-     * Executes statement
+     * Prepares query and executes it
      *
-     * @param PDOStatement $statement to execute 
+     * @param string $queryString to execute 
      * @return PDOStatement $statement after execution
      */
-    public function execute( $statement )
+    public function execute( $queryString )
     {
+        $statement = $this->prepare( $queryString );
         $statement->execute();
         return $statement;
     }
     
     /**
-     * Queries the db
-     *
-     * @param string $queryString to query
-     * @return PDOStatement result of the query
-     */
-    public function query( $queryString )
-    {
-        return $this->dbh->query( $queryString );
-    }
-    
-    /**
-     * Gets value from column
-     *
-     * @param PDOStatement $statement from wich to fetch
+     * Executes query and returns value 
+     * from the first column
+     * @param string $queryString from wich to fetch
      * @return mixed value
      */
-    public function fetchColumn( $statement )
+    public function fetchColumn( $queryString )
     {
+        $statement = $this->execute( $queryString );
         return $statement->fetchColumn();
     }
     
     /**
-     * Fetches all rows from statement
+     * Executes query and returns all rows
      *
-     * @param PDOStatement $statement 
+     * @param string $queryString to execute
      * @return array of rows
      */
-    public function fetchAll( $statement )
+    public function fetchAll( $queryString )
     {
+        $statement = $this->dbh->prepare( $queryString );
+        $statement->execute();
         return $statement->fetchAll();
     }
     
     /**
-     * Fetches one row from statement with options
+     * Executes query and returns one row
      *
-     * @param PDOStatement $statement
-     * @param PDO::FETCH_* constant $options - type of result 
-     * @return mixed result
+     * @param string $queryString to execute
+     * @return array result
      */
-    public function fetch( $statement, $options = null )
+    public function fetch( $queryString )
     {
-        return $statement->fetch( $options );
+        $statement = $this->dbh->prepare( $queryString );
+        $statement->execute();
+        return $statement->fetch( PDO::FETCH_ASSOC );
     }
     
     /**

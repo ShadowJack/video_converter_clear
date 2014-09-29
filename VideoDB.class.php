@@ -42,9 +42,7 @@ class VideoDB
     public function fetchAll()
     {
         $this->database->connect();
-        $statement = $this->database->prepare( 'SELECT * from videos' );
-        $statement = $this->database->execute( $statement );
-        $result = $this->database->fetchAll( $statement );
+        $result = $this->database->fetchAll( 'SELECT * from videos' );
         $this->database->disconnect();
         return $result;
     }
@@ -62,9 +60,7 @@ class VideoDB
         {  
             $this->database->connect();
             $columns = implode( ', ', $columns );
-            $statement = $this->database->prepare( "SELECT $columns FROM videos WHERE id = $id" );
-            $statement = $this->database->execute( $statement );
-            $row = $this->database->fetch( $statement, PDO::FETCH_ASSOC );
+            $row = $this->database->fetch( "SELECT $columns FROM videos WHERE id = $id" );
             $this->database->disconnect();
             return $row;
         } catch ( Exception $e ) 
@@ -89,9 +85,9 @@ class VideoDB
         try 
         {  
             $this->database->connect();
-            $count = $this->database->query( "SELECT COUNT(*) FROM videos WHERE status = 'c'" );
+            $count = $this->database->fetchColumn( "SELECT COUNT(*) FROM videos WHERE status = 'c'" );
             $this->database->disconnect();
-            return $this->database->fetchColumn( $count );
+            return $count;
         } catch ( Exception $e ) 
         {
             if ( $this->database->isConnected() )
@@ -121,7 +117,7 @@ class VideoDB
         try
         {
             $this->database->connect();
-            $this->database->query( "UPDATE videos SET $str WHERE id=$id" );
+            $this->database->execute( "UPDATE videos SET $str WHERE id=$id" );
             $this->database->disconnect();
             return true;
         } catch ( Exception $e ) 
@@ -150,13 +146,10 @@ class VideoDB
         {  
             $this->database->connect();
             $this->database->beginTransaction();
-            $statement = $this->database->prepare( "SHOW TABLE STATUS LIKE 'videos'" );
-            $statement = $this->database->execute( $statement );
-            $id = $this->database->fetch( $statement, PDO::FETCH_ASSOC )['Auto_increment'];
+            $id = $this->database->fetch( "SHOW TABLE STATUS LIKE 'videos'" )['Auto_increment'];
             $uploadPath = "upload/$id.flv";
-            $statement = $this->database->prepare( 'INSERT INTO videos( title, FLV, dimensions, bv, ba, created, status )'.
+            $this->database->execute( 'INSERT INTO videos( title, FLV, dimensions, bv, ba, created, status )'.
                          " VALUES( '$title', '$uploadPath', '$dimensions', '$videoBitrate', '$audioBitrate', NOW(), 'c' )" );
-            $statement = $this->database->execute( $statement );
             $this->database->commit();
             $this->database->disconnect();
             return $id;
@@ -189,8 +182,7 @@ class VideoDB
             $this->database->connect();
             if ( ( $deleted['FLV'] == true ) && ( $deleted['MP4'] == true ) )   // delete entire entry from table
             {
-                $statement = $this->database->prepare( "DELETE FROM videos WHERE id = $id" );
-                $this->database->execute( $statement );
+                $this->database->execute( "DELETE FROM videos WHERE id = $id"  );
                 $completelyDeleted = true;
             }
             else
@@ -198,13 +190,11 @@ class VideoDB
                 $this->database->beginTransaction();
                 if ( $deleted['FLV'] == true )                                  // delete just path to FLV file
                 {
-                    $statement = $this->database->prepare( "UPDATE videos SET FLV=NULL WHERE id = $id" );
-                    $this->database->execute( $statement );
+                    $this->database->execute( "UPDATE videos SET FLV=NULL WHERE id = $id" );
                 }
                 if ( $deleted['MP4'] == true )                                  // delete just path to MP4 file
                 {
-                    $statement = $this->dbh->prepare( "UPDATE videos SET MP4=NULL WHERE id = $id" );
-                    $this->database->execute( $statement );
+                    $this->dbh->execute( "UPDATE videos SET MP4=NULL WHERE id = $id" );
                 }
                 $this->database->commit();
             }
