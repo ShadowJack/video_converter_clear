@@ -1,7 +1,7 @@
 <?php
 require_once 'vendor/autoload.php';
 require_once 'VideoDB.class.php';
-require_once 'paths.config.php';
+require_once 'config.inc.php';
 
 use Symfony\Component\Process\Process;
 
@@ -46,7 +46,7 @@ class VideoModel
             return 'Please try later - there is too many files converting right now.';
         }
         // Get info about file using ffprobe
-        exec( Paths::$ffprobe.' -v quiet -print_format json -show_streams '.$tmpPath, $output );
+        exec( FFPROBE_PATH.' -v quiet -print_format json -show_streams '.$tmpPath, $output );
         $videoStream = json_decode( implode( '', $output ), true )['streams'][0];
         $audioStream = json_decode( implode( '', $output ), true )['streams'][1];
         $dimensions = $videoStream['width'].'x'.$videoStream['height'];
@@ -60,7 +60,7 @@ class VideoModel
         if ( move_uploaded_file( $tmpPath, "upload/$id.flv" ) )
         {
             //create new converting Process
-            $process = new Process( Paths::$ffmpeg." -i upload/$id.flv -s $dimensions".
+            $process = new Process( FFMPEG_PATH." -i upload/$id.flv -s $dimensions".
                                     ' -b:v '.ceil($videoBitrate/1000).'k -ar '.
                                     ceil($audioBitrate/1000)."k upload/$id.mp4" );
             $process->setTimeout( 3600 ); // kill the process after an hour
