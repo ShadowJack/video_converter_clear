@@ -2,10 +2,13 @@ video_converter_clear
 =====================
 
 ##DB Schema
+###Table video
  * id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
  * title VARCHAR(100)
- * FLV VARCHAR(100)
- * MP4 VARCHAR(100)
+ * flv VARCHAR(100)
+ * mp4 VARCHAR(100)
+ * video_bitrate VARCHAR(10)
+ * audio_bitrate VARCHAR(10)
  * created DATETIME DEFAULT NULL
  * status VARCHAR(1) - c: converting, f - finished
 
