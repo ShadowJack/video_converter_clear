@@ -241,7 +241,6 @@ class VideoModel
      */
     private static function tryDeleteVideo( $path )
     {
-        error_log( "!!!!!! try to delete from path: $path" );
         if ( ( $path == null ) || ( $path == '' ) || !file_exists( $path ) )
         {
             return true;

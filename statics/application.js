@@ -3,7 +3,7 @@ function deleteVideo(id)
 {
     $.ajax({
         type: "DELETE",
-        url: ""+id,
+        url: "/video_converter/videos/"+id,
         success: function(msg)
         {
             window.location.href = "";
