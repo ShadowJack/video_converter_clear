@@ -96,14 +96,11 @@ class VideoModel
             return false;
         }
         
-        error_log( "!!!!!!" . print_r( $video, true ) );
-        
         /** @var array */
         $deleted = Array();
         
         $deleted['flv'] = self::tryDeleteVideo( $video['flv'] );
         $deleted['mp4'] = self::tryDeleteVideo( $video['mp4'] );
-        error_log( "!!!!!!OLOLO:" . print_r( $ololo, true ) );
         return $db->removeVideo( $id, $deleted );
     }
     
@@ -147,6 +144,14 @@ class VideoModel
         return array($video['title'], $video['dimensions'], $video['video_bitrate'], $video['audio_bitrate']);
     }
     
+    
+    /**
+     * Sends file to user
+     *
+     * @param string $id 
+     * @param string $type - flv/mp4
+     * @return boolean success
+     */
     private static function sendFile( $id, $type )
     {
         /** @var VideoDB */
@@ -228,7 +233,7 @@ class VideoModel
     }
     
     /**
-     * Deletes video at the path
+     * Deletes video at the $path
      * from disk
      *
      * @param string $path 
