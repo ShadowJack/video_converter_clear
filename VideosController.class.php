@@ -30,7 +30,8 @@ class VideosController
         }
         else
         {
-            echo VideoModel::createVideo( $_POST['title'], $_FILES['newVideo']['tmp_name'] );
+            $response = VideoModel::createVideo( $_POST['title'], $_FILES['newVideo']['tmp_name'] );
+            include( 'templates/uploadResult.tmpl.php' );
         }
     }
     

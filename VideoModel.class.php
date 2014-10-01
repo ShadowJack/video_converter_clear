@@ -19,6 +19,7 @@ class VideoModel
      */
     public static function fetchAll()
     {
+        /** @var VideoDB */
         $db = new VideoDB();
         return $db->fetchAll();
     }
@@ -30,55 +31,50 @@ class VideoModel
      *
      * @param string $title video title
      * @param string $tmpPath path to uploaded file
-     * @return response string
+     * @return string response
      */
     public static function createVideo( $title, $tmpPath )
     {   
+        /** @var VideoDB */
         $db = new VideoDB();
-        // check if there is less then 5 processes   
+        /** @var mixed integer/false */
         $count = $db->getConvertingCount();
         if ( $count === false )
         {
             return 'Error while getting ConvertingCount!';
         }
-        elseif ( $count >= 5 )
+        elseif ( $count >= MAX_CONCURRENT_CONVERTIONS )
         {
             return 'Please try later - there is too many files converting right now.';
         }
-        // Get info about file using ffprobe
-        exec( FFPROBE_PATH.' -v quiet -print_format json -show_streams '.$tmpPath, $output );
-        $videoStream = json_decode( implode( '', $output ), true )['streams'][0];
-        $audioStream = json_decode( implode( '', $output ), true )['streams'][1];
-        $dimensions = $videoStream['width'].'x'.$videoStream['height'];
-        $videoBitrate = $videoStream['bit_rate'];
-        $audioBitrate = $audioStream['bit_rate'];
-
-        // Add new entry to DB       
-        $id = $db->insertVideo( $title, $dimensions, $videoBitrate, $audioBitrate );
+        
+        /** @var array */
+        $metaData = self::getMetaFromFile( $tmpPath );
+        /** @var string */
+        $id = $db->insertVideo( $title,
+                                $metaData['dimensions'],
+                                $metaData['videoBitrate'].'k',
+                                $metaData['audioBitrate'].'k'
+                                );
 
         // Move file from temporary dir to upload/
-        if ( move_uploaded_file( $tmpPath, "upload/$id.flv" ) )
+        if ( !move_uploaded_file( $tmpPath, "upload/$id.flv" ) )
         {
-            //create new converting Process
-            $process = new Process( FFMPEG_PATH." -i upload/$id.flv -s $dimensions".
-                                    ' -b:v '.ceil($videoBitrate/1000).'k -ar '.
-                                    ceil($audioBitrate/1000)."k upload/$id.mp4" );
-            $process->setTimeout( 3600 ); // kill the process after an hour
-            $process->run();
-            if ( $process->isSuccessful() )
-            {
-                $db->updateCols( $id, Array( 'mp4' => "'upload/$id.mp4'", 'status' => "'f'" ) );
-            }
-            else
-            {
-                error_log( $process->getIncrementalErrorOutput() );
-            }
-            return "<p>Your file was successfully uploaded!</p><a href=''> Go to index </a>";
+            $db->removeVideo( $id, Array( 'mp4' => true, 'mp4' => true ) );
+            return "Couldn't upload your file";
+        }
+        
+        /** @var Process */
+        $process = self::convertVideo( $id, $metaData );
+        if ( $process->isSuccessful() )
+        {
+            $db->updateCols( $id, Array( 'mp4' => "'upload/$id.mp4'", 'status' => "'f'" ) );
+            return "Your file was successfully uploaded!";
         }
         else
         {
-            $db->removeVideo( $id, Array( 'mp4' => true, 'mp4' => true ) );
-            return "Couldn't upload your file\n";
+            error_log( $process->getIncrementalErrorOutput() );
+            return "Couldn't convert your file!";
         }
     }
     
@@ -87,34 +83,27 @@ class VideoModel
      * removes them from db
      *
      * @param string $id
-     * @return void
+     * @return boolean - true if entry was completely deleted
      */
     public static function deleteVideo( $id )
     {  
+        /** @var VideoDB */
         $db = new VideoDB();
-        $paths = $db->fetchCols( $id, Array( 'flv', 'mp4' ) );
-        if ( !$paths ) // fetchCols was unsuccessfull
+        /** @var mixed array/false */
+        $video = $db->getVideoById( $id );
+        if ( !$video ) // fetchCols was unsuccessfull
         {
-            return;
+            return false;
         }
         
-        // delete from disk
-        $deleted = Array( 'flv' => true, 'mp4' => true );
-        if ( ( $paths['flv'] != null ) && ( $paths['flv'] != '' ) )
-        {
-            if ( !unlink( $paths['flv'] ) )
-            {
-                $deleted['flv'] = false;
-            }
-        }
-        if ( ( $paths['mp4'] != null ) && ( $paths['mp4'] != '' ) )
-        {
-            if ( !unlink( $paths['mp4'] ) )
-            {
-                $deleted['mp4'] = false;
-            }
-        }
+        error_log( "!!!!!!" . print_r( $video, true ) );
         
+        /** @var array */
+        $deleted = Array();
+        
+        $deleted['flv'] = self::tryDeleteVideo( $video['flv'] );
+        $deleted['mp4'] = self::tryDeleteVideo( $video['mp4'] );
+        error_log( "!!!!!!OLOLO:" . print_r( $ololo, true ) );
         return $db->removeVideo( $id, $deleted );
     }
     
@@ -127,25 +116,7 @@ class VideoModel
      */
     public static function getFlv( $id )
     {
-        $db = new VideoDB();
-        $row = $db->fetchCols( $id, Array( 'title', 'flv' ) );
-        $filePath = $row['flv'];
-        $title = $row['title'];
-        if ( !$filePath || !file_exists( $filePath ) )
-        {
-            return false;
-        }
-        else
-        {
-            header( $_SERVER['SERVER_PROTOCOL'] . ' 200 OK' );
-            header( 'Cache-Control: public' );
-            header( 'Content-Type: video/x-flv' );
-            header( 'Content-Transfer-Encoding: Binary' );
-            header( 'Content-Length:'.filesize( $filePath ) );
-            header( "Content-Disposition: attachment; filename=$title" );
-            readfile( $filePath );
-            return true;
-        }
+        self::sendFile( $id, 'flv' );
     }
     
     /**
@@ -157,25 +128,7 @@ class VideoModel
      */
     public static function getMp4( $id )
     {
-        $db = new VideoDB();
-        $row = $db->fetchCols( $id, Array( 'title', 'mp4' ) );
-        $filePath = $row['mp4'];
-        $title = $row['title'];
-        if ( !$filePath || !file_exists( $filePath ) )
-        {
-            return false;
-        }
-        else 
-        {
-            header( $_SERVER['SERVER_PROTOCOL'] . ' 200 OK' );
-            header( 'Cache-Control: public' );
-            header( 'Content-Type: video/mp4' );
-            header( 'Content-Transfer-Encoding: Binary' );
-            header( 'Content-Length:'.filesize( $filePath ) );
-            header( "Content-Disposition: attachment; filename=$title" );
-            readfile( $filePath );
-            return true;
-        }
+        self::sendFile( $id, 'mp4' );
     }
     
     /**
@@ -187,8 +140,112 @@ class VideoModel
      */
     public static function getMeta( $id )
     {
+        /** @var VideoDB */
         $db = new VideoDB();
-        return $db->fetchCols( $id, Array( 'title', 'dimensions', 'video_bitrate', 'audio_bitrate' ) );
+        /** @var mixed array/false */
+        $video = $db->getVideoById( $id );
+        return array($video['title'], $video['dimensions'], $video['video_bitrate'], $video['audio_bitrate']);
+    }
+    
+    private static function sendFile( $id, $type )
+    {
+        /** @var VideoDB */
+        $db = new VideoDB();
+        /** @var mixed array/false */
+        $video = $db->getVideoById( $id );
+        /** @var string */
+        $filePath = $video[$type];
+        /** @var string */
+        $title = $video['title'];
+        if ( !$filePath || !file_exists( $filePath ) )
+        {
+            return false;
+        }
+        else
+        {
+            header( $_SERVER['SERVER_PROTOCOL'] . ' 200 OK' );
+            header( 'Cache-Control: public' );
+            header( 'Content-Type: video/' . ( ($type == 'flv') ? 'x-flv' : 'mp4' ) );
+            header( 'Content-Transfer-Encoding: Binary' );
+            header( 'Content-Length:'.filesize( $filePath ) );
+            header( "Content-Disposition: attachment; filename=$title" );
+            readfile( $filePath );
+            return true;
+        }
+    }
+    
+    /**
+     * Gets meta data from the file
+     * using ffprobe 
+     *
+     * @param string $pathToFile 
+     * @return array
+     */
+    private static function getMetaFromFile( $pathToFile )
+    {
+        /** @var string */
+        $output;
+        /** @var array */
+        $videoStream;
+        /** @var array */
+        $audioStream;
+        /** @var string */
+        $dimensions;
+        /** @var string */
+        $videoBitrate;
+        /** @var string */
+        $audioBitrate;
+        exec( FFPROBE_PATH.' -v quiet -print_format json -show_streams '.$pathToFile, $output );
+        /** @var string */
+        $videoStream = json_decode( implode( '', $output ), true )['streams'][0];
+        $audioStream = json_decode( implode( '', $output ), true )['streams'][1];
+        $dimensions = $videoStream['width'].'x'.$videoStream['height'];
+        $videoBitrate = ceil( $videoStream['bit_rate'] / 1000 );
+        $audioBitrate = ceil( $audioStream['bit_rate'] / 1000 );
+        return array( 'dimensions' => $dimensions,
+                      'videoBitrate' => $videoBitrate,
+                      'audioBitrate' => $audioBitrate
+                    );
+    }
+    
+    /**
+     * Creates process that converts
+     * flv into mp4 using FFMpeg
+     *
+     * @param string $id 
+     * @param array $metaData 
+     * @return Process
+     */
+    private static function convertVideo( $id, $metaData )
+    {
+        /** @var Process */
+        $process = new Process( FFMPEG_PATH." -i upload/$id.flv -s " . $metaData['dimensions'].
+                                ' -b:v '. $metaData['videoBitrate'] .'k -ar '.
+                                 $metaData['audioBitrate']."k upload/$id.mp4 &" );
+        $process->setTimeout( HOUR ); // kill the process after an hour
+        $process->run();
+        return $process;
+    }
+    
+    /**
+     * Deletes video at the path
+     * from disk
+     *
+     * @param string $path 
+     * @return boolean - true on success
+     */
+    private static function tryDeleteVideo( $path )
+    {
+        error_log( "!!!!!! try to delete from path: $path" );
+        if ( ( $path == null ) || ( $path == '' ) || !file_exists( $path ) )
+        {
+            return true;
+        }
+        if ( !unlink( $path ) )
+        {
+            return false;
+        }
+        return true;
     }
 }
     

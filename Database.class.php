@@ -1,13 +1,33 @@
 <?php
+require_once 'DatabaseException.class.php';
+
 /**
  * Class contains low-level functions
  * to work with db
  */
 class Database
 {
+    /**
+     * Db credentials
+     *
+     * @var string
+     */
     private $dbAddress = 'mysql:host=127.0.0.1;dbname=videos_db';
+    /**
+     * User from which db is running
+     *
+     * @var string
+     */
     private $dbUser = 'dbowner';
+    /**
+     * dbUser's password
+     *
+     * @var string
+     */
     private $dbPassword = 'password';
+    /**
+     * @var PDO
+     */
     private $dbh; 
     
     /**
@@ -16,6 +36,8 @@ class Database
      * @param string $dbAddress - db credentials 
      * @param string $dbUser - db user
      * @param string $dbPassword 
+     *
+     * @throws DatabaseException
      */
     public function __construct( $dbAddress = null, $dbUser = null, $dbPassword = null )
     {
@@ -30,37 +52,17 @@ class Database
         if ( $dbPassword )
         {
             $this->dbPassword = $dbPassword;
-        }    
-    }
-    
-    /**
-     * Connects to db
-     *
-     * @return void
-     */
-    public function connect()
-    {
-        $this->dbh = new PDO( $this->dbAddress, $this->dbUser, $this->dbPassword );
-    }
-    
-    /**
-     * Disconnects from db
-     *
-     * @return void
-     */
-    public function disconnect()
-    {
-        $this->dbh = null;
-    }
-    
-    /**
-     * Checks if there is live connection to db
-     *
-     * @return boolean connected
-     */
-    public function isConnected()
-    {
-        return ( $this->dbh !== null );
+        }
+        
+        try
+        {
+            $this->dbh = new PDO( $this->dbAddress, $this->dbUser, $this->dbPassword );
+        }
+        catch (Exception $e)
+        {
+            throw new DatabaseException('Error, while connecting to db', 0, $e);
+        }
+        
     }
     
     /**
@@ -116,7 +118,7 @@ class Database
      * Executes query and returns one row
      *
      * @param string $queryString to execute
-     * @return array result
+     * @return array result / false on failure
      */
     public function fetch( $queryString )
     {
@@ -153,6 +155,11 @@ class Database
     public function rollBack()
     {
         $this->dbh->rollBack();
+    }
+    
+    public function lastInsertId()
+    {
+        return $this->dbh->lastInsertId();
     }
 }
 ?>

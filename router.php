@@ -1,6 +1,13 @@
 <?php 
 require_once 'VideosController.class.php';  
 
+function exception_handler($exception) {
+  echo "Uncaught exception: " , $exception->getMessage(), "\n";
+}
+
+set_exception_handler('exception_handler');
+
+
 $method = $_SERVER['REQUEST_METHOD'];
 $args = explode('/', rtrim($_REQUEST['init_req'], '/'));
 
