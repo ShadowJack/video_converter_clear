@@ -1,9 +1,7 @@
 <?php
 require_once('VideoModel.class.php');
-//TODO: переделать конфиг в объявление констант
 class VideosController
-{
-    
+{    
     /**
     * Prints all uploaded videos
     *
@@ -11,6 +9,7 @@ class VideosController
     **/
     public function getIndex()
     {
+        /** @var array */
         $videos = VideoModel::fetchAll();
         include( 'templates/index.tmpl.php' );
     }
@@ -30,6 +29,7 @@ class VideosController
         }
         else
         {
+            /** @var string */
             $response = VideoModel::createVideo( $_POST['title'], $_FILES['newVideo']['tmp_name'] );
             include( 'templates/uploadResult.tmpl.php' );
         }
@@ -65,6 +65,7 @@ class VideosController
      */
     public function getFlv( $id )
     {
+        /** @var boolean */
         $resp = VideoModel::getFlv( $id );
         if ( !$resp )
         {
@@ -80,6 +81,7 @@ class VideosController
      */
     public function getMp4( $id )
     {
+        /** @var boolean */
         $resp = VideoModel::getMp4( $id );
         if ( !$resp )
         {
@@ -96,6 +98,7 @@ class VideosController
      */
     public function getMeta( $id )
     {
+        /** @var array */
         $meta = VideoModel::getMeta( $id );
         include( 'templates/meta.tmpl.php' );
     }

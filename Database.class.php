@@ -25,9 +25,7 @@ class Database
      * @var string
      */
     private $dbPassword = 'password';
-    /**
-     * @var PDO
-     */
+    /** @var PDO */
     private $dbh; 
     
     /**
@@ -53,7 +51,6 @@ class Database
         {
             $this->dbPassword = $dbPassword;
         }
-        
         try
         {
             $this->dbh = new PDO( $this->dbAddress, $this->dbUser, $this->dbPassword );
@@ -84,6 +81,7 @@ class Database
      */
     public function execute( $queryString )
     {
+        /** @var PDOStatement */
         $statement = $this->prepare( $queryString );
         $statement->execute();
         return $statement;
@@ -97,6 +95,7 @@ class Database
      */
     public function fetchColumn( $queryString )
     {
+        /** @var PDOStatement */
         $statement = $this->execute( $queryString );
         return $statement->fetchColumn();
     }
@@ -109,6 +108,7 @@ class Database
      */
     public function fetchAll( $queryString )
     {
+        /** @var PDOStatement */
         $statement = $this->dbh->prepare( $queryString );
         $statement->execute();
         return $statement->fetchAll();
@@ -122,6 +122,7 @@ class Database
      */
     public function fetch( $queryString )
     {
+        /** @var PDOStatement */
         $statement = $this->dbh->prepare( $queryString );
         $statement->execute();
         return $statement->fetch( PDO::FETCH_ASSOC );
@@ -157,6 +158,13 @@ class Database
         $this->dbh->rollBack();
     }
     
+    /**
+     * Returns id of the last row that
+     * was inserted or updated during 
+     * current connection to db
+     *
+     * @return string
+     */
     public function lastInsertId()
     {
         return $this->dbh->lastInsertId();

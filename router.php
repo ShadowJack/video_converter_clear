@@ -7,8 +7,9 @@ function exception_handler($exception) {
 
 set_exception_handler('exception_handler');
 
-
+/** @var string */
 $method = $_SERVER['REQUEST_METHOD'];
+/** @var array */
 $args = explode('/', rtrim($_REQUEST['init_req'], '/'));
 
 if ( ( count( $args ) == 1 ) && ( $args[0] == '' ) )     // matches /videos
@@ -17,11 +18,13 @@ if ( ( count( $args ) == 1 ) && ( $args[0] == '' ) )     // matches /videos
 }
 elseif ( ( count( $args ) == 1 ) && ( $args[0] == 'new' ) && ( $method == 'GET' ) )      // GET: /videos/new
 {
+    /** @var VideosController */
     $videosController = new VideosController();
     $videosController->newVideo();
 }
 elseif ( ( count( $args ) == 1 ) && ( preg_match( '/^\d+$/', $args[0] ) ) && ( $method == 'DELETE' ) )    // DELETE: /videos/:id
 {
+    /** @var VideosController */
     $videosController = new VideosController();
     $videosController->deleteVideo( $args[0] );
 }
@@ -43,6 +46,7 @@ else
  */
 function matchVideos($method)
 {
+    /** @var VideosController */
     $videosController = new VideosController();
     
     switch ( $method )
@@ -67,6 +71,7 @@ function matchVideos($method)
  */
 function matchVideosAction($id, $action)
 {
+    /** @var VideosController */
     $videosController = new VideosController();
     
     switch ( $action )

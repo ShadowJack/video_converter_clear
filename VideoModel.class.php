@@ -98,7 +98,6 @@ class VideoModel
         
         /** @var array */
         $deleted = Array();
-        
         $deleted['flv'] = self::tryDeleteVideo( $video['flv'] );
         $deleted['mp4'] = self::tryDeleteVideo( $video['mp4'] );
         return $db->removeVideo( $id, $deleted );
@@ -190,22 +189,16 @@ class VideoModel
     {
         /** @var string */
         $output;
-        /** @var array */
-        $videoStream;
-        /** @var array */
-        $audioStream;
-        /** @var string */
-        $dimensions;
-        /** @var string */
-        $videoBitrate;
-        /** @var string */
-        $audioBitrate;
         exec( FFPROBE_PATH.' -v quiet -print_format json -show_streams '.$pathToFile, $output );
-        /** @var string */
+        /** @var array */
         $videoStream = json_decode( implode( '', $output ), true )['streams'][0];
+        /** @var array */
         $audioStream = json_decode( implode( '', $output ), true )['streams'][1];
+        /** @var string */
         $dimensions = $videoStream['width'].'x'.$videoStream['height'];
+        /** @var string */
         $videoBitrate = ceil( $videoStream['bit_rate'] / 1000 );
+        /** @var string */
         $audioBitrate = ceil( $audioStream['bit_rate'] / 1000 );
         return array( 'dimensions' => $dimensions,
                       'videoBitrate' => $videoBitrate,

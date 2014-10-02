@@ -7,15 +7,22 @@ require_once 'Database.class.php';
  * Schema:
  * id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
  * title VARCHAR(100)
- * FLV VARCHAR(100)
- * MP4 VARCHAR(100)
+ * flv VARCHAR(100)
+ * mp4 VARCHAR(100)
+ * dimensions VARCHAR(10)
+ * video_bitrate VARCHAR(10)
+ * audio_bitrate VARCHAR(10)
  * created DATETIME DEFAULT NULL
  * status VARCHAR(1) - c: converting, f - finished, q - queued
  *
  */
 class VideoDB
 {
-    
+    /**
+     * Db driver
+     *
+     * @var Database
+     */
     private $database;
     
     /**
@@ -50,8 +57,7 @@ class VideoDB
      */
     public function fetchAll()
     {
-        $result = $this->database->fetchAll( 'SELECT * from video' );
-        return $result;
+        return $this->database->fetchAll( 'SELECT * from video' );
     }
     
     /**
@@ -86,11 +92,13 @@ class VideoDB
      */
     public function updateCols( $id, $cols )
     {
+        /** @var array */
         $arr = array();
         foreach( $cols as $k => $v )
         {
             array_push( $arr, $k.'='.$v );
         }
+        /** @var string */
         $str = implode( ', ', $arr );
 
         $this->database->execute( "UPDATE video SET $str WHERE id=$id" );
@@ -109,13 +117,11 @@ class VideoDB
     public function insertVideo( $title, $dimensions, $videoBitrate, $audioBitrate )
     {
         $this->database->beginTransaction();
-        //$id = $this->database->fetch( "SHOW TABLE STATUS LIKE 'video'" )['Auto_increment'];
-        //$id = $this->database->getNewId();
-        //error_log("New Id: ".$id);
-
         $this->database->execute( 'INSERT INTO video( title, dimensions, video_bitrate, audio_bitrate, created, status )'.
-                     " VALUES( '$title', '$dimensions', '$videoBitrate', '$audioBitrate', NOW(), 'c' )" );
+                                  " VALUES( '$title', '$dimensions', '$videoBitrate', '$audioBitrate', NOW(), 'c' )" );
+        /** @var string */
         $id = $this->database->lastInsertId();
+        /** @var string */
         $uploadPath = "upload/$id.flv";
         $this->database->execute("UPDATE video SET flv='$uploadPath' WHERE id=$id");
         $this->database->commit();
@@ -134,6 +140,7 @@ class VideoDB
      */
     public function removeVideo( $id, $deleted )
     {
+        /** @var boolean */
         $completelyDeleted = false;
         if ( ( $deleted['flv'] == true ) && ( $deleted['mp4'] == true ) )   // delete entire entry from table
         {
