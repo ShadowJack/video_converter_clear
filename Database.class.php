@@ -66,7 +66,7 @@ class Database
      * Prepares incoming string for execution
      *
      * @param string $queryString string to prepare
-     * @return PDOStatment that can be executed later
+     * @return PDOStatement that can be executed later
      */
     private function prepare( $queryString )
     {

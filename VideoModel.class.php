@@ -65,17 +65,18 @@ class VideoModel
         }
         
         /** @var Process */
-        $process = self::convertVideo( $id, $metaData );
-        if ( $process->isSuccessful() )
-        {
-            $db->updateCols( $id, Array( 'mp4' => "'upload/$id.mp4'", 'status' => "'f'" ) );
-            return "Your file was successfully uploaded!";
-        }
-        else
-        {
-            error_log( $process->getIncrementalErrorOutput() );
-            return "Couldn't convert your file!";
-        }
+        //$process = self::convertVideo( $id, $metaData );
+        //if ( $process->isSuccessful() )
+        //{
+        //    $db->updateCols( $id, Array( 'mp4' => "'upload/$id.mp4'", 'status' => "'f'" ) );
+        //    return "Your file was successfully uploaded!";
+        //}
+        // else
+//         {
+//             error_log( $process->getIncrementalErrorOutput() );
+//             return "Couldn't convert your file!";
+//         }
+        return "Your file is sent to conversion";
     }
     
     /**
@@ -140,7 +141,10 @@ class VideoModel
         $db = new VideoDB();
         /** @var mixed array/false */
         $video = $db->getVideoById( $id );
-        return array($video['title'], $video['dimensions'], $video['video_bitrate'], $video['audio_bitrate']);
+        return array($video['title'], 
+                     $video['dimensions'], 
+                     $video['video_bitrate'], 
+                     $video['audio_bitrate']);
     }
     
     
@@ -200,7 +204,7 @@ class VideoModel
         $videoBitrate = ceil( $videoStream['bit_rate'] / 1000 );
         /** @var string */
         $audioBitrate = ceil( $audioStream['bit_rate'] / 1000 );
-        return array( 'dimensions' => $dimensions,
+        return array( 'dimensions'   => $dimensions,
                       'videoBitrate' => $videoBitrate,
                       'audioBitrate' => $audioBitrate
                     );

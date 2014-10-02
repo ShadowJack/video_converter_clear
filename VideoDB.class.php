@@ -118,7 +118,7 @@ class VideoDB
     {
         $this->database->beginTransaction();
         $this->database->execute( 'INSERT INTO video( title, dimensions, video_bitrate, audio_bitrate, created, status )'.
-                                  " VALUES( '$title', '$dimensions', '$videoBitrate', '$audioBitrate', NOW(), 'c' )" );
+                                  " VALUES( '$title', '$dimensions', '$videoBitrate', '$audioBitrate', NOW(), 'q' )" );
         /** @var string */
         $id = $this->database->lastInsertId();
         /** @var string */
