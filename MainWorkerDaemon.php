@@ -32,78 +32,88 @@ echo "Connected to db!\n";
 // main loop
 while ( !$stop_server ) 
 {
-    //check for jobs available in the db
-    if ( !$stop_server && ( count( $child_processes ) < MAX_CONCURRENT_CONVERTIONS ) ) 
+    work( $child_processes, $db );
+}
+
+function work( &$child_processes, &$db )
+{
+    echo ".";
+    if ( count( $child_processes ) >= MAX_CONCURRENT_CONVERTIONS ) 
     {
-        $video = $db->fetch( "SELECT * FROM video WHERE status='q'" );
-        if ( $video )
-        {
-            // we have a job
-            echo "I have a video to convert!\n";
-            $pid = pcntl_fork();            
-        
-            if ( $pid == -1 ) 
-            {
-                error_log( "Can't fork child process\n" );
-                continue;
-            } 
-            elseif ( $pid ) // master process
-            {
-                $child_processes[$pid] = $video['id'];
-                // create new db connection as previous 
-                // connection will be closed by child process
-                $db = new Database();   
-                $db->execute( "UPDATE video SET status='c' WHERE id=".$video['id'] );
-            } 
-            else            // worker process
-            {
-                $pid = getmypid();
-                // convert video
-                echo "I'm a child";
-                $id = $video['id'];
-                exec( FFMPEG_PATH." -i upload/$id.flv -s " . $video['dimensions'].
-                                                ' -b:v '. $video['video_bitrate'] .' -ar '.
-                                                $video['audio_bitrate']." upload/$id.mp4".
-                                                " </dev/null >".dirname(__FILE__)."/ffmpeg.log 2>&1" );
-                exit;
-            }
-        }
-    } 
-    else 
-    {
-        //check every 5 seconds if any worker is available
-        sleep( WAIT_FOR_WORKERS_TIME ); 
+        checkChildren( $child_processes, $db );
+        sleep( WAIT_FOR_WORKERS_TIME );
+        return;
     }
     
-    echo "I'm a master and I'm trying to check my slaves!\n";
+    //check for jobs available in the db
+    $video = $db->fetch( "SELECT * FROM video WHERE status='q'" );
+    if ( $video )
+    {
+        doJob( $child_processes, $db, $video );
+    }
+    
     //check if any of the children exited
+    checkChildren( $child_processes, $db );
+    sleep( WAIT_FOR_JOB_TIME );
+}
+
+function doJob( &$child_processes, &$db, $video )
+{
+    echo "I have a video to convert!\n";
+    $pid = pcntl_fork();            
+
+    if ( $pid == -1 ) 
+    {
+        error_log( "Can't fork child process\n" );
+        return;
+    } 
+    elseif ( $pid ) // parent process
+    {
+        $child_processes[$pid] = $video['id'];
+        // create new db connection as previous 
+        // connection will be closed by child process
+        $db = new Database();   
+        $db->execute( "UPDATE video SET status='c' WHERE id=".$video['id'] );
+        //var_dump( $result->errorInfo() );
+    } 
+    else            // child process
+    {
+        $id = $video['id'];
+        exec( FFMPEG_PATH." -i upload/$id.flv -s " . $video['dimensions'].
+                                        ' -b:v '. $video['video_bitrate'] .' -ar '.
+                                        $video['audio_bitrate']." upload/$id.mp4".
+                                        " </dev/null >".dirname(__FILE__)."/ffmpeg.log 2>&1" );
+        exit;
+    }
+}
+
+function checkChildren( &$child_processes, &$db )
+{
+    // WNOHANG - don't wait for children. Check them and go further.
     while ( $signaled_pid = pcntl_waitpid( -1, $status, WNOHANG ) ) 
     {
         if ( $signaled_pid == -1 ) 
         {
-            //детей не осталось
+            // there is no children
             $child_processes = array();
             break;
         } 
-        elseif( pcntl_wifexited( $status ) ) 
+        elseif( pcntl_wifexited( $status ) ) // normally finished
         {
             echo "Finished convertation!\n";
-            //var_dump( $db );
-            $sql = "UPDATE video SET status='f',".
-                          " mp4='upload/".$child_processes[$signaled_pid].".mp4'".
-                          " WHERE id=".$child_processes[$signaled_pid];
-            echo $sql . "\n";
-            $result = $db->execute( $sql );
-            var_dump( $result->errorInfo() );
+            $id = $child_processes[$signaled_pid];
+            $db->execute( "UPDATE video SET status='f',".
+                          " mp4='upload/".$id.".mp4'".
+                          " WHERE id=".$id );
+            //var_dump( $result->errorInfo() );
         }
-        else
+        else                                // stopped because of error or signal
         {
             echo "Convertation unexpectedly stopped!\n";
             $db->execute( "UPDATE video SET status='q' WHERE id=".$child_processes[$signaled_pid] );
         }
         unset( $child_processes[$signaled_pid] );
     }
-    sleep( WAIT_FOR_JOB_TIME );
 }
 
 function sigHandler($signo) 
