@@ -98,7 +98,7 @@ class Daemon
         } 
         elseif ( $pid ) // parent process
         {
-            $this->doParentJob( $video );
+            $this->doParentJob( $pid, $video );
         } 
         else            // child process
         {
@@ -112,8 +112,9 @@ class Daemon
      * @param array $video 
      * @return void
      */
-    private function doParentJob( $video )
+    private function doParentJob( $pid, $video )
     {
+        echo $pid;
         $this->child_processes[$pid] = $video['id'];
         // create new db connection as previous 
         // connection will be closed by child process
@@ -158,11 +159,11 @@ class Daemon
             } 
             elseif( pcntl_wifexited( $status ) ) // normally finished
             {
-                $this->onJobSuccess();
+                $this->onJobSuccess( $signaled_pid );
             }
             else                                // stopped because of error or signal
             {
-                $this->onJobFailure();
+                $this->onJobFailure( $signaled_pid );
             }
             unset( $this->child_processes[$signaled_pid] );
         }
@@ -173,16 +174,15 @@ class Daemon
      *
      * @return void
      */
-    private function onJobSuccess()
+    private function onJobSuccess( $signaled_pid )
     {
         echo "Finished convertation!\n";
         /** @var string */
         $id = $this->child_processes[$signaled_pid];
-        echo "ID: $id \n";
-        $result = $this->db->execute( "UPDATE video SET status='f',".
+        echo "Success ID: $id \n";
+        $this->db->execute( "UPDATE video SET status='f',".
                       " mp4='upload/".$id.".mp4'".
                       " WHERE id=".$id );
-        var_dump( $result->errorInfo() );
     }
     
     /**
@@ -190,7 +190,7 @@ class Daemon
      *
      * @return void
      */
-    private function onJobFailure()
+    private function onJobFailure( $signaled_pid )
     {
         echo "Convertation unexpectedly stopped!\n";
         $this->db->execute( "UPDATE video SET status='q' WHERE id=".$this->child_processes[$signaled_pid] );

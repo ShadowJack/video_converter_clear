@@ -1,5 +1,4 @@
 <?php
-require_once 'vendor/autoload.php';
 require_once 'VideoDB.class.php';
 require_once 'config.inc.php';
 
@@ -63,19 +62,6 @@ class VideoModel
             $db->removeVideo( $id, Array( 'mp4' => true, 'mp4' => true ) );
             return "Couldn't upload your file";
         }
-        
-        /** @var Process */
-        //$process = self::convertVideo( $id, $metaData );
-        //if ( $process->isSuccessful() )
-        //{
-        //    $db->updateCols( $id, Array( 'mp4' => "'upload/$id.mp4'", 'status' => "'f'" ) );
-        //    return "Your file was successfully uploaded!";
-        //}
-        // else
-//         {
-//             error_log( $process->getIncrementalErrorOutput() );
-//             return "Couldn't convert your file!";
-//         }
         return "Your file is sent to conversion";
     }
     
@@ -208,25 +194,6 @@ class VideoModel
                       'videoBitrate' => $videoBitrate,
                       'audioBitrate' => $audioBitrate
                     );
-    }
-    
-    /**
-     * Creates process that converts
-     * flv into mp4 using FFMpeg
-     *
-     * @param string $id 
-     * @param array $metaData 
-     * @return Process
-     */
-    private static function convertVideo( $id, $metaData )
-    {
-        /** @var Process */
-        $process = new Process( FFMPEG_PATH." -i upload/$id.flv -s " . $metaData['dimensions'].
-                                ' -b:v '. $metaData['videoBitrate'] .'k -ar '.
-                                 $metaData['audioBitrate']."k upload/$id.mp4 &" );
-        $process->setTimeout( HOUR ); // kill the process after an hour
-        $process->run();
-        return $process;
     }
     
     /**
